@@ -1,0 +1,8 @@
+.env
+.dev.vars
+.wrangler/
+node_modules/
+runtime/node.exe
+runtime/node_modules/
+*.secret
+*.log
