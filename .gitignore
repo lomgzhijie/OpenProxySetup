@@ -6,3 +6,5 @@ runtime/node.exe
 runtime/node_modules/
 *.secret
 *.log
+
+/自建机场.exe
