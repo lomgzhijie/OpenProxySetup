@@ -8,6 +8,10 @@
 
 ## 部署教程
 
+点击下方播放按钮即可观看完整教程，支持全屏播放。在线播放版约 9 MB，时长约 5 分钟。
+
+<video src="https://github.com/lomgzhijie/zijianjichang/releases/download/v1.3/zijianjichang-tutorial-web.mp4" controls></video>
+
 [下载 Windows 部署视频教程（原版 MP4，约 200 MB）](https://github.com/lomgzhijie/zijianjichang/releases/download/v1.3/zijianjichang-v1.3-tutorial-original.mp4)
 
 原始录屏约 5 分钟，演示 DNSHE 域名准备、Cloudflare 授权、Windows 部署向导、管理后台和 v2rayN 导入。
