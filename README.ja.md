@@ -30,6 +30,8 @@ DNSHE の API Key と API Secret は CNAME の追加に必要です。アプリ�
 
 `自建机场-Windows-EXE-v1.3.1.zip` をすべて展開し、`自建机场.exe` をダブルクリックします。EXE、`runtime`、`vendor`、各スクリプトは同じフォルダーに置いてください。Windows の .NET Framework と Windows PowerShell 5.1 を使用します。起動に失敗した場合は、`启动应用.cmd` を実行してエラーを確認できます。
 
+[v1.3 CMD 版](https://github.com/lomgzhijie/zijianjichang/releases/download/v1.3.1/zijianjichang-windows-x64-cmd-v1.3.zip)も利用できます。ZIP をすべて展開し、`启动应用.cmd` をダブルクリックしてください。
+
 ## メンテナー向けのパッケージ作成
 
 PowerShell で `npm ci --prefix runtime` を実行して指定バージョンの Wrangler をインストールし、Windows x64 版の `node.exe` と `NODE-LICENSE` を `runtime` に置きます。Windows PowerShell 5.1 で `./打包发布.ps1` を実行すると、EXE をコンパイルして `自建机场-Windows-EXE-v1.3.1.zip` を作成します。ランチャーだけをコンパイルする場合は `./构建应用.ps1`、ZIP からインストーラー EXE を作成する場合は `./构建安装程序.ps1` を実行します。ランチャーのソースは `launcher/Launcher.cs` にあります。これらのコマンドはメンテナー向けです。ソースから起動する場合は `./app.ps1` を実行します。

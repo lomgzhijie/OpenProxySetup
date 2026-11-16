@@ -30,6 +30,8 @@ The DNSHE API Key and Secret authorize adding the CNAME. The app uses them durin
 
 Extract the entire `自建机场-Windows-EXE-v1.3.1.zip` archive and double-click `自建机场.exe`. Keep the EXE, `runtime`, `vendor`, and scripts in the same directory. The app uses Windows’ .NET Framework and Windows PowerShell 5.1. If it fails to launch, run `启动应用.cmd` to see the error.
 
+You can also download the [v1.3 CMD edition](https://github.com/lomgzhijie/zijianjichang/releases/download/v1.3.1/zijianjichang-windows-x64-cmd-v1.3.zip). Extract the entire ZIP and double-click `启动应用.cmd`.
+
 ## Packaging for maintainers
 
 Run `npm ci --prefix runtime` in PowerShell to install the pinned Wrangler version, then place the Windows x64 `node.exe` and its `NODE-LICENSE` in `runtime`. Run `./打包发布.ps1` in Windows PowerShell 5.1 to compile the EXE and build `自建机场-Windows-EXE-v1.3.1.zip`. Run `./构建应用.ps1` to compile the launcher separately, or `./构建安装程序.ps1` to turn the ZIP into an installer EXE. Launcher source is in `launcher/Launcher.cs`. These commands are for maintainers. To launch from source, run `./app.ps1`.

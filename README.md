@@ -30,6 +30,8 @@ DNSHE 的 API Key / Secret 是添加 CNAME 所必需的授权。应用只在本�
 
 完整解压 `自建机场-Windows-EXE-v1.3.1.zip` 后，双击 `自建机场.exe`。EXE 与 runtime、vendor 及脚本应放在同一个目录。运行依赖 Windows 自带的 .NET Framework 和 Windows PowerShell 5.1。启动失败时，可运行 `启动应用.cmd` 查看错误。
 
+也可下载 [v1.3 CMD 版](https://github.com/lomgzhijie/zijianjichang/releases/download/v1.3.1/zijianjichang-windows-x64-cmd-v1.3.zip)，完整解压后双击 `启动应用.cmd`。
+
 ## 项目维护者打包
 
 在 PowerShell 里运行 `npm ci --prefix runtime` 安装固定版本的 Wrangler，并将 Windows x64 版 `node.exe` 及其 `NODE-LICENSE` 放入 `runtime`，使用 Windows PowerShell 5.1 运行 `./打包发布.ps1`，自动编译 EXE 并生成 `自建机场-Windows-EXE-v1.3.1.zip`。单独编译可运行 `./构建应用.ps1`，运行 ./构建安装程序.ps1 可将 ZIP 打包成安装 EXE。启动入口源码位于 `launcher/Launcher.cs`。下载者无需执行这些维护命令。源码可直接运行 `./app.ps1`。
