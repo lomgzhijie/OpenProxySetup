@@ -2,13 +2,46 @@
 
 [简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-## インストールと使い方
+[Windows x64 版をダウンロード](https://github.com/lomgzhijie/zijianjichang/releases/latest) · [問題を報告](https://github.com/lomgzhijie/zijianjichang/issues/new/choose) · [貢献する](CONTRIBUTING.md)
 
-1. [Windows x64 インストーラーをダウンロード](https://github.com/lomgzhijie/zijianjichang/releases/download/v1.3.1/zijianjichang-windows-x64-setup.exe)して実行し、インストール先を選択します。「自建机场」フォルダーが作成され、デプロイウィザードが開きます。次回からはフォルダー内の 自建机场.exe を起動してください。
-2. ウィザードに従って DNSHE のドメインと API 認証情報を用意し、ブラウザーで自分の Cloudflare アカウントを認証します。
-3. ドメイン、DNSHE の認証情報、12 文字以上の管理者パスワードを入力し、デプロイを開始します。
-4. 表示された管理画面を開いてログインし、サブスクリプション URL を対応クライアントに追加します。独自ドメインの検証中は Pages のアドレスを利用できます。
+Windows 向けのデプロイアプリです。自分の Cloudflare アカウントでログインし、管理者パスワードを設定します。アプリは同梱の [edgetunnel](https://github.com/cmliu/edgetunnel) ソースを使って Cloudflare KV と Pages を作成し、サイトのリンクを表示します。サイトの `/admin` を開き、設定したパスワードでログインすると、上流プロジェクトの管理画面でノードやサブスクリプションリンクを確認できます。
 
-Windows x64 と DNSHE・Cloudflare へのネットワーク接続が必要です。Node.js と Wrangler は同梱されています。ご自身が管理するアカウントとドメインを使用し、適用される法令と利用規約を守ってください。
+本プロジェクトが提供するのはデプロイウィザードです。各ユーザーは自分の Cloudflare アカウントにデプロイします。共有ノード、アカウント、クラウドサービスの提供は対象外です。
 
-[MIT](LICENSE) · [edgetunnel GPL-2.0](vendor/edgetunnel/LICENSE)
+## ダウンロードと使い方
+
+ホーム画面には法令に関する注意事項があり、「后台管理」（管理画面）に直接進むこともできます。デプロイ後はサイトのアドレスと管理者パスワードが自動入力されます。既存のサイトの場合は手動で入力し、ブラウザーで管理画面にログインします。パスワードは現在のアプリのウィンドウ内に保持され、コピーや消去ができます。
+
+1. [Windows x64 インストーラー](https://github.com/lomgzhijie/zijianjichang/releases/download/v1.3.1/zijianjichang-windows-x64-setup.exe)をダウンロードして実行し、インストール先を選択します。「自建机场」フォルダーが作られ、ウィザードが開きます。次回からはフォルダー内の `自建机场.exe` をダブルクリックします。
+2. アプリのリンクから [Cloudflare](https://dash.cloudflare.com/sign-up) と [DNSHE](https://my.dnshe.com/) に登録するかログインします。DNSHE でドメインを取得し、「ドメイン管理 → API 管理」で API Key と API Secret を作成します。手順 3 の「开始 Cloudflare 授权」でブラウザー認証を開始し、完了後に「我已完成授权，继续」を選択します。アプリは認証を確認してからデプロイ画面を開きます。Cloudflare アカウントの認証情報は Cloudflare のサイトで入力します。
+3. DNSHE ドメイン、API Key、API Secret、12 文字以上の管理者パスワードを入力してデプロイを開始します。アプリが KV、Pages、シークレットを作成してデプロイし、Pages にカスタムドメインの関連付けを申請します。さらに DNSHE API で `pages.dev` を指す CNAME を追加します。競合する既存の DNS レコードは保持されます。
+4. デプロイ完了後、表示された管理画面を開き、設定したパスワードでログインします。ノードまたはサブスクリプションリンクをコピーし、対応クライアントにインポートします。利用できる形式はデプロイ時の上流バージョンに依存します。カスタムドメインが有効になるまでは、表示された `pages.dev` アドレスを使えます。
+
+デプロイ中もウィンドウを操作でき、経過時間を確認できます。ネットワークやブラウザー認証の状況により、おおむね 3〜10 分かかります。カスタムドメインの DNS と証明書が有効になるまで、さらに数分から数時間かかる場合があります。
+
+DNSHE の API Key と API Secret は CNAME の追加に必要です。アプリは実行中のみ使用し、プロジェクトファイルには書き込みません。DNS レコードが競合する場合や DNSHE が書き込みを拒否した場合、既存レコードは保持されます。証明書の発行と DNS の反映を待つ間は、`pages.dev` の管理画面を使えます。Cloudflare Pages の公式ドキュメントでは、外部 DNS で管理するサブドメインを Cloudflare ゾーンに追加せず、CNAME で関連付けられます。
+
+### 動作環境
+
+- Windows 10 または Windows 11
+- Cloudflare と DNSHE にアクセスできるネットワーク。Node.js、Wrangler、上流のノード用ソースは同梱されています。実行時に Git や Node.js を別途インストールする必要はありません。
+
+## ZIP ポータブル版
+
+`自建机场-Windows-EXE-v1.3.1.zip` をすべて展開し、`自建机场.exe` をダブルクリックします。EXE、`runtime`、`vendor`、各スクリプトは同じフォルダーに置いてください。Windows の .NET Framework と Windows PowerShell 5.1 を使用します。起動に失敗した場合は、`启动应用.cmd` を実行してエラーを確認できます。
+
+## メンテナー向けのパッケージ作成
+
+PowerShell で `npm ci --prefix runtime` を実行して指定バージョンの Wrangler をインストールし、Windows x64 版の `node.exe` と `NODE-LICENSE` を `runtime` に置きます。Windows PowerShell 5.1 で `./打包发布.ps1` を実行すると、EXE をコンパイルして `自建机场-Windows-EXE-v1.3.1.zip` を作成します。ランチャーだけをコンパイルする場合は `./构建应用.ps1`、ZIP からインストーラー EXE を作成する場合は `./构建安装程序.ps1` を実行します。ランチャーのソースは `launcher/Launcher.cs` にあります。これらのコマンドはメンテナー向けです。ソースから起動する場合は `./app.ps1` を実行します。
+
+## 動作の仕組みと範囲
+
+1. パッケージにはバージョンを固定した上流の `_worker.js`、GPL-2.0 ライセンス、コミット ID を同梱しています。実行時は同梱ファイルを使用し、`git clone` は行いません。
+2. Cloudflare 公式の Wrangler CLI でブラウザー認証、KV の作成、`ADMIN` シークレットの設定、Pages プロジェクトの作成とデプロイを行います。Cloudflare Pages API でカスタムドメインを関連付け、DNSHE API で CNAME を追加します。
+3. アプリは管理画面のアドレス `https://<プロジェクト名>.pages.dev/admin` を表示します。サブスクリプションリンクは上流の管理画面で生成されます。
+
+管理者パスワードは現在のプロセスから Cloudflare に渡され、プロジェクトファイルには保存されません。パスワードやサブスクリプションリンクは公開しないでください。Cloudflare の無料枠、プラットフォームのルール、上流機能は変更される可能性があります。利用時は現地の法令と利用規約に従ってください。
+
+## 出典とライセンス
+
+本プロジェクトは [edgetunnel の上流コード](https://github.com/cmliu/edgetunnel) を使用し、デプロイは [Cloudflare Pages のドキュメント](https://developers.cloudflare.com/pages/) を参照しています。このリポジトリ独自のスクリプトとドキュメントは MIT ライセンス、同梱の上流コードは GPL-2.0 ライセンスです。詳細は `vendor/edgetunnel/LICENSE` を参照してください。同梱の Node.js のライセンスは `runtime/NODE-LICENSE` にあり、Wrangler と依存関係のライセンスは npm パッケージに含まれています。再配布時には該当するソースコードとライセンスを保持してください。
