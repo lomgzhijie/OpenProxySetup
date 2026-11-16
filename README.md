@@ -10,7 +10,7 @@
 
 点击下方播放按钮即可观看完整教程，支持全屏播放。在线播放版约 9 MB，时长约 5 分钟。
 
-<video src="https://github.com/lomgzhijie/zijianjichang/releases/download/v1.3/zijianjichang-tutorial-web.mp4" controls></video>
+https://github.com/user-attachments/assets/101d0b35-f8a2-4588-b327-c635125885c3
 
 [下载 Windows 部署视频教程（原版 MP4，约 200 MB）](https://github.com/lomgzhijie/zijianjichang/releases/download/v1.3/zijianjichang-v1.3-tutorial-original.mp4)
 
