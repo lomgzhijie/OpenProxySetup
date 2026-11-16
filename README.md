@@ -8,9 +8,9 @@
 
 ## 部署教程
 
-[下载 Windows 部署视频教程（MP4）](https://github.com/lomgzhijie/zijianjichang/releases/download/v1.3/zijianjichang-v1.3-tutorial.mp4)
+[下载 Windows 部署视频教程（原版 MP4，约 200 MB）](https://github.com/lomgzhijie/zijianjichang/releases/download/v1.3/zijianjichang-v1.3-tutorial-original.mp4)
 
-视频约 2 分 49 秒，无声。开头用说明卡介绍 DNSHE 域名、Cloudflare 授权和部署参数，随后用实录演示部署结果、管理后台和 v2rayN 导入界面。画面中的敏感字段已遮挡。
+原始录屏约 5 分钟，演示 DNSHE 域名准备、Cloudflare 授权、Windows 部署向导、管理后台和 v2rayN 导入。
 
 使用 Windows 部署向导可以把服务部署到自己的 Cloudflare 账号，并通过管理后台获取订阅。部署和 DNS 生效时间以应用及服务商显示的状态为准。
 
