@@ -1,4 +1,5 @@
-﻿param([string]$ProjectName, [string]$Domain, [securestring]$AdminPassword, [securestring]$DnsheKey, [securestring]$DnsheSecret)
+﻿param([string]$ProjectName, [string]$Domain, [securestring]$AdminPassword, [securestring]$DnsheKey, [securestring]$DnsheSecret,
+      [hashtable]$Deployment)
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -15,6 +16,7 @@ function Run([string]$Exe, [string[]]$Arguments) {
     } finally { $ErrorActionPreference = $previousPreference }
     if ($exitCode -ne 0) { throw "命令执行失败（退出码 $exitCode）：$output" }
     Write-Host $output
+    return $output
 }
 
 function Set-AdminSecret([string]$Value) {
@@ -31,71 +33,109 @@ function Set-AdminSecret([string]$Value) {
     Write-Host 'ADMIN 密钥已设置。'
 }
 
-function Test-CloudflareAuth {
-    if ($env:CLOUDFLARE_API_TOKEN) {
-        $accountId = $env:CLOUDFLARE_ACCOUNT_ID
+function Set-DeploymentStep([int]$Step) {
+    $now = [DateTime]::UtcNow
+    if ($Deployment.Step -gt 0) {
+        $Deployment.Times[$Deployment.Step] += ($now - $Deployment.StepStarted).TotalSeconds
+    }
+    if ($Step -gt 0) { $Deployment.LastStep = $Step }
+    $Deployment.StepStarted = $now
+    $Deployment.Step = $Step
+}
+
+function Read-WranglerJson([string[]]$Arguments) {
+    $prior = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $json = & $nodeExe $wranglerJs @Arguments 2>$null | Out-String
+        $exitCode = $LASTEXITCODE
+    } finally { $ErrorActionPreference = $prior }
+    if ($exitCode -ne 0) { throw 'Cloudflare 命令失败。请检查授权、账号权限和网络后重试。' }
+    return ($json | ConvertFrom-Json)
+}
+
+function Resolve-CloudflareAccount {
+    $accountId = $env:CLOUDFLARE_ACCOUNT_ID
+    $token = $env:CLOUDFLARE_API_TOKEN
+    if ($token) {
         if ($accountId -notmatch '^[a-fA-F0-9]{32}$') {
             throw 'API Token 模式需要设置 32 位的 CLOUDFLARE_ACCOUNT_ID。'
         }
-        $headers = @{ Authorization = 'Bearer ' + $env:CLOUDFLARE_API_TOKEN }
-        try {
-            $accountsPage = Invoke-RestMethod -Uri "https://api.cloudflare.com/client/v4/accounts/$accountId/pages/projects?per_page=1" -Headers $headers -Method Get -TimeoutSec 8 -MaximumRedirection 0
-            if (-not $accountsPage.success) { throw 'Cloudflare API 拒绝读取项目。' }
-            return $true
-        } catch {
-            $responseProperty = $_.Exception.PSObject.Properties['Response']
-            if ($responseProperty -and $responseProperty.Value -and [int]$responseProperty.Value.StatusCode -in @(401,403)) {
-                throw 'Cloudflare 拒绝 API Token。请核对 Token、账号 ID 和 Pages 权限。'
-            }
-            throw 'Cloudflare API Token 验证失败。请核对账号 ID，并确认当前 VPN 环境可访问 Cloudflare API。'
-        } finally { $headers.Clear() }
+    } else {
+        try { $token = (Read-WranglerJson @('auth','token','--json')).token }
+        catch { $token = $null }
+        if (-not $token) { throw 'Cloudflare 尚未授权。请回到第 3 步完成浏览器授权，再继续部署。' }
     }
-    $prior = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
-    try {
-        $tokenJson = & $nodeExe $wranglerJs auth token --json 2>$null | Out-String
-        if ($LASTEXITCODE -ne 0) { return $false }
-        $value = $tokenJson | ConvertFrom-Json
-        return [bool]$value.token
-    } catch { return $false }
-    finally { $ErrorActionPreference = $prior; $tokenJson = $null; $value = $null }
+
+    $headers = @{Authorization = "Bearer $token"}
+    if (-not $accountId) {
+        $accounts = Invoke-CloudflareRequest 'https://api.cloudflare.com/client/v4/accounts?per_page=50' $headers
+        $items = @($accounts.result)
+        if ($items.Count -ne 1) {
+            throw '无法确定唯一的 Cloudflare 账号。请通过 CLOUDFLARE_ACCOUNT_ID 指定目标账号。'
+        }
+        $accountId = $items[0].id
+    }
+    if ($Deployment.AccountId -and $Deployment.AccountId -ne $accountId) {
+        throw 'Cloudflare 账号已更换。请使用本次部署原来的账号重新授权后继续。'
+    }
+    [void](Invoke-CloudflareRequest "https://api.cloudflare.com/client/v4/accounts/$accountId/pages/projects?per_page=1" $headers)
+    $Deployment.AccountId = $accountId
+    return $headers
 }
 
-function Attach-Domain([string]$Name, [string]$Project, [string]$DnsheKeyPlain, [string]$DnsheSecretPlain) {
-    $oldPreference=$ErrorActionPreference
-    try { $ErrorActionPreference='Continue'; $authJson = & $nodeExe $wranglerJs auth token --json 2>$null | Out-String; $authExit=$LASTEXITCODE }
-    finally { $ErrorActionPreference=$oldPreference }
-    if ($authExit -ne 0) { throw '无法取得 Cloudflare 授权，请重新登录。' }
-    $auth = $authJson | ConvertFrom-Json
-    if (-not $auth.token) { throw 'Cloudflare 授权方式不支持自动绑定域名。' }
-    $headers = @{ Authorization = "Bearer $($auth.token)" }
+function Get-KvId {
+    $name = "$ProjectName-KV"
+    if ($Deployment.KvAttempted) {
+        $existing = @(Read-WranglerJson @('kv','namespace','list') | Where-Object title -eq $name)
+        if ($existing.Count -eq 1) { return $existing[0].id }
+        if ($existing.Count -gt 1) { throw "Cloudflare 中有多个同名 KV（$name）。请在控制台核对后重试。" }
+    }
+    $Deployment.KvAttempted = $true
+    $output = Run $nodeExe @($wranglerJs,'kv','namespace','create',$name)
+    $match = [regex]::Match($output, '(?m)["'']?id["'']?\s*[:=]\s*["'']([a-f0-9]{32})["'']')
+    if (-not $match.Success) { throw 'KV 已提交创建，但未取得 ID。继续部署时会重新查询同名 KV。' }
+    return $match.Groups[1].Value
+}
+
+function Invoke-CloudflareRequest([string]$Uri, [hashtable]$Headers, [string]$Method = 'Get', [string]$Body = '') {
+    $request = @{Uri=$Uri; Headers=$Headers; Method=$Method; TimeoutSec=15}
+    if ($Body) {
+        $request.Body = $Body
+        $request.ContentType = 'application/json'
+    }
     try {
-        $accountId = $env:CLOUDFLARE_ACCOUNT_ID
-        if (-not $accountId) {
-            $accounts = Invoke-RestMethod -Uri 'https://api.cloudflare.com/client/v4/accounts?per_page=50' -Headers $headers -Method Get
-            if (-not $accounts.success) { throw '无法读取 Cloudflare 账号。' }
-            $items = @($accounts.result)
-            if ($items.Count -ne 1) { throw '当前登录关联多个 Cloudflare 账号，无法自动判断域名归属。请设置 CLOUDFLARE_ACCOUNT_ID 后重试。' }
-            $accountId = $items[0].id
-        }
-        $uri = "https://api.cloudflare.com/client/v4/accounts/$accountId/pages/projects/$Project/domains"
-        $existing = Invoke-RestMethod -Uri $uri -Headers $headers -Method Get
-        if (-not @($existing.result | Where-Object { $_.name -eq $Name }).Count) {
-            $response = Invoke-RestMethod -Uri $uri -Headers $headers -Method Post -ContentType 'application/json' -Body (@{name=$Name}|ConvertTo-Json -Compress)
-            if (-not $response.success) { throw 'Cloudflare 拒绝绑定域名。' }
-        }
-        Write-Host "自定义域名 $Name 已提交 Pages 绑定。"
-        & (Join-Path $root 'dnshe.ps1') -Domain $Name -Target "$Project.pages.dev" -ApiKey $DnsheKeyPlain -ApiSecret $DnsheSecretPlain
-        if (-not $?) { throw 'DNSHE CNAME 创建失败。' }
-        try { [void](Invoke-RestMethod -Uri "$uri/$Name" -Headers $headers -Method Patch) }
-        catch { Write-Warning 'Cloudflare 域名验证重试请求未完成，稍后将继续检查状态。' }
-        for ($i=0; $i -lt 6; $i++) {
-            $check = Invoke-RestMethod -Uri "$uri/$Name" -Headers $headers -Method Get
-            if ($check.result.status -eq 'active') { Write-Host "DNS 与证书验证完成：https://$Name/admin"; return }
-            Start-Sleep -Seconds 5
-        }
-        Write-Host 'Cloudflare 正在签发证书或传播 DNS；稍后可直接访问自定义域名。生效前使用 pages.dev 地址。'
-    } finally { $auth = $null; $authJson = $null; $headers = $null }
+        $response = Invoke-RestMethod @request
+    } catch {
+        $responseProperty = $_.Exception.PSObject.Properties['Response']
+        $status = if ($responseProperty -and $responseProperty.Value) {
+            'HTTP ' + [int]$responseProperty.Value.StatusCode
+        } else { $_.Exception.Message }
+        throw "Cloudflare 请求失败（$status）。"
+    }
+    if (-not $response.success) { throw 'Cloudflare API 拒绝请求。请核对账号和权限。' }
+    return $response
+}
+
+function Attach-Domain([string]$Name, [string]$Project, [hashtable]$Headers, [string]$DnsheKeyPlain, [string]$DnsheSecretPlain) {
+    $accountId = $Deployment.AccountId
+    $uri = "https://api.cloudflare.com/client/v4/accounts/$accountId/pages/projects/$Project/domains"
+    $existing = Invoke-CloudflareRequest $uri $Headers
+    if (-not @($existing.result | Where-Object { $_.name -eq $Name }).Count) {
+        [void](Invoke-CloudflareRequest $uri $Headers 'Post' (@{name=$Name}|ConvertTo-Json -Compress))
+    }
+    Write-Host "自定义域名 $Name 已提交 Pages 绑定。"
+    & (Join-Path $root 'dnshe.ps1') -Domain $Name -Target "$Project.pages.dev" -ApiKey $DnsheKeyPlain -ApiSecret $DnsheSecretPlain
+    if (-not $?) { throw 'DNSHE CNAME 创建失败。' }
+    try { [void](Invoke-CloudflareRequest "$uri/$Name" $Headers 'Patch') }
+    catch { Write-Warning 'Cloudflare 域名验证重试请求未完成，稍后将继续检查状态。' }
+    for ($i=0; $i -lt 6; $i++) {
+        $check = Invoke-CloudflareRequest "$uri/$Name" $Headers
+        if ($check.result.status -eq 'active') { Write-Host "DNS 与证书验证完成：https://$Name/admin"; return $true }
+        if ($i -lt 5) { Start-Sleep -Seconds 5 }
+    }
+    Write-Host 'Cloudflare 正在签发证书或传播 DNS；稍后可直接访问自定义域名。生效前使用 pages.dev 地址。'
+    return $false
 }
 
 if (-not (Test-Path $nodeExe) -or -not (Test-Path $wranglerJs)) { throw '下载包缺少内置运行组件，请重新下载完整 ZIP。' }
@@ -104,51 +144,81 @@ if ($ProjectName -notmatch '^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$') { throw '项目�
 if (-not $Domain) { $Domain = Read-Host 'DNSHE 完整域名' }
 if ($Domain -and $Domain -notmatch '^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$') { throw '域名格式无效。' }
 
-if (-not $AdminPassword) { $AdminPassword = Read-Host '管理员密码（仅传给 Cloudflare，不保存）' -AsSecureString }
-$admin = $AdminPassword
-if ($admin.Length -lt 12) { throw '管理员密码至少 12 个字符。' }
-$vendor = Join-Path $root 'vendor\edgetunnel'
-if (-not (Test-Path (Join-Path $vendor '_worker.js'))) { throw '上游源码缺少 _worker.js。' }
-if (-not (Test-Path (Join-Path $vendor 'LICENSE'))) { throw '上游源码缺少 LICENSE。' }
-if ((Get-Item (Join-Path $vendor '_worker.js')).Length -lt 100000) { throw '包内 _worker.js 不完整，请重新下载应用包。' }
-Write-Host "使用内置 edgetunnel 版本：$(Get-Content (Join-Path $vendor 'UPSTREAM_COMMIT') -Raw)"
-
-$dir = Join-Path $env:TEMP ("zijianjichang-" + [guid]::NewGuid().ToString('N'))
-New-Item -ItemType Directory -Path $dir | Out-Null
-try {
-    Copy-Item (Join-Path $vendor '_worker.js') (Join-Path $dir '_worker.js')
-    Copy-Item (Join-Path $vendor 'LICENSE') (Join-Path $dir 'UPSTREAM-LICENSE')
-    if (-not (Test-CloudflareAuth)) {
-        throw 'Cloudflare 尚未授权。请回到应用第 3 步，点击“开始 Cloudflare 授权”，完成浏览器登录后再部署。'
+$headers = $null
+$previousAccount = $env:CLOUDFLARE_ACCOUNT_ID
+if (-not $Deployment) {
+    $Deployment = @{
+        Step = 0; StepStarted = [DateTime]::UtcNow; Times = @(0.0,0.0,0.0,0.0,0.0)
+        AccountId = ''; KvId = ''; KvAttempted = $false
+        ProjectAttempted = $false; ProjectCreated = $false; PagesReady = $false
+        DomainStarted = $false; DomainActive = $false
     }
+}
+try {
+    Set-DeploymentStep 1
+    $headers = Resolve-CloudflareAccount
+    $env:CLOUDFLARE_ACCOUNT_ID = $Deployment.AccountId
     if (-not $DnsheKey -or -not $DnsheSecret) { throw '缺少 DNSHE API Key 或 Secret。' }
-    $oldPreference=$ErrorActionPreference
-    try { $ErrorActionPreference='Continue'; $kvOut = & $nodeExe $wranglerJs kv namespace create "$ProjectName-KV" 2>&1 | Out-String; $kvExit=$LASTEXITCODE }
-    finally { $ErrorActionPreference=$oldPreference }
-    if ($kvExit -ne 0) { throw "KV 创建失败：$kvOut" }
-    $match = [regex]::Match($kvOut, '(?m)["'']?id["'']?\s*[:=]\s*["'']([a-f0-9]{32})["'']')
-    if (-not $match.Success) { throw "无法读取 KV ID，请在 Cloudflare 控制台核对：$kvOut" }
-    $cfg = @{ name=$ProjectName; pages_build_output_dir='.'; compatibility_date=(Get-Date -Format 'yyyy-MM-dd'); kv_namespaces=@(@{binding='KV';id=$match.Groups[1].Value}) }
-    $cfg | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $dir 'wrangler.json') -Encoding utf8
-    Push-Location $dir
-    try {
-        Run $nodeExe @($wranglerJs,'pages','project','create',$ProjectName,'--production-branch','main')
-        $plain = [System.Net.NetworkCredential]::new('', $admin).Password
+
+    if (-not $Deployment.PagesReady) {
+        if (-not $AdminPassword) { $AdminPassword = Read-Host '管理员密码（仅传给 Cloudflare，不保存）' -AsSecureString }
+        if ($AdminPassword.Length -lt 12) { throw '管理员密码至少 12 个字符。' }
+        $vendor = Join-Path $root 'vendor\edgetunnel'
+        $worker = Join-Path $vendor '_worker.js'
+        if (-not (Test-Path $worker) -or -not (Test-Path (Join-Path $vendor 'LICENSE')) -or
+            (Get-Item $worker).Length -lt 100000) { throw '包内上游源码或许可证不完整，请重新下载应用包。' }
+        Write-Host "使用内置 edgetunnel 版本：$(Get-Content (Join-Path $vendor 'UPSTREAM_COMMIT') -Raw)"
+
+        if (-not $Deployment.KvId) {
+            Set-DeploymentStep 2
+            $Deployment.KvId = Get-KvId
+        }
+        Set-DeploymentStep 3
+        $dir = Join-Path $env:TEMP ("zijianjichang-" + [guid]::NewGuid().ToString('N'))
+        New-Item -ItemType Directory -Path $dir | Out-Null
         try {
-            Set-AdminSecret -Value $plain
-        } finally { $plain = $null }
-        Run $nodeExe @($wranglerJs,'pages','deploy','.','--project-name',$ProjectName,'--branch','main')
-    } finally { Pop-Location }
+            Copy-Item $worker (Join-Path $dir '_worker.js')
+            Copy-Item (Join-Path $vendor 'LICENSE') (Join-Path $dir 'UPSTREAM-LICENSE')
+            $cfg = @{ name=$ProjectName; pages_build_output_dir='.'; compatibility_date=(Get-Date -Format 'yyyy-MM-dd'); kv_namespaces=@(@{binding='KV';id=$Deployment.KvId}) }
+            $cfg | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $dir 'wrangler.json') -Encoding utf8
+            Push-Location $dir
+            try {
+                if (-not $Deployment.ProjectCreated) {
+                    if ($Deployment.ProjectAttempted) {
+                        $existing = @(Read-WranglerJson @('pages','project','list','--json') | Where-Object { $_.'Project Name' -eq $ProjectName })
+                        $Deployment.ProjectCreated = $existing.Count -eq 1
+                    }
+                    if (-not $Deployment.ProjectCreated) {
+                        $Deployment.ProjectAttempted = $true
+                        [void](Run $nodeExe @($wranglerJs,'pages','project','create',$ProjectName,'--production-branch','main'))
+                        $Deployment.ProjectCreated = $true
+                    }
+                }
+                $plain = [System.Net.NetworkCredential]::new('', $AdminPassword).Password
+                try { Set-AdminSecret -Value $plain }
+                finally { $plain = $null }
+                [void](Run $nodeExe @($wranglerJs,'pages','deploy','.','--project-name',$ProjectName,'--branch','main'))
+                $Deployment.PagesReady = $true
+            } finally { Pop-Location }
+        } finally {
+            Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
     Write-Host "Pages 地址：https://$ProjectName.pages.dev/admin"
     if ($Domain) {
-        $keyPlain=[System.Net.NetworkCredential]::new('',$DnsheKey).Password
-        $secretPlain=[System.Net.NetworkCredential]::new('',$DnsheSecret).Password
-        try { Attach-Domain -Name $Domain -Project $ProjectName -DnsheKeyPlain $keyPlain -DnsheSecretPlain $secretPlain }
+        $Deployment.DomainStarted = $true
+        Set-DeploymentStep 4
+        $keyPlain = [System.Net.NetworkCredential]::new('', $DnsheKey).Password
+        $secretPlain = [System.Net.NetworkCredential]::new('', $DnsheSecret).Password
+        try { $Deployment.DomainActive = Attach-Domain $Domain $ProjectName $headers $keyPlain $secretPlain }
         catch { Write-Output "__DOMAIN_WARNING__:$($_.Exception.Message)" }
-        finally { $keyPlain=$null; $secretPlain=$null }
-        Write-Host "自定义域名预期后台：https://$Domain/admin"
+        finally { $keyPlain = $null; $secretPlain = $null }
+        if ($Deployment.DomainActive) { Write-Host "自定义域名后台：https://$Domain/admin" }
     }
-    Write-Host '进入后台获取实际订阅路径，再运行 .\links.ps1 拼接完整订阅链接。'
+    Write-Host '进入后台获取实际订阅链接。'
 } finally {
-    Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+    Set-DeploymentStep 0
+    $env:CLOUDFLARE_ACCOUNT_ID = $previousAccount
+    if ($headers) { $headers.Clear() }
 }

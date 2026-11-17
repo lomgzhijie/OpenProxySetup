@@ -2,7 +2,7 @@
 
 [简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-[Download Windows x64](https://github.com/lomgzhijie/zijianjichang/releases/latest) · [Report an issue](https://github.com/lomgzhijie/zijianjichang/issues/new/choose) · [Contribute](CONTRIBUTING.md)
+[Download Windows x64](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [Report an issue](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [Contribute](CONTRIBUTING.md)
 
 This Windows deployment app signs in with your own Cloudflare account and lets you set an administrator password. It uses the bundled [edgetunnel](https://github.com/cmliu/edgetunnel) source to create Cloudflare KV and Pages resources and displays a clickable site address. Open the site’s `/admin` page and enter the password to view nodes and subscription links in the upstream dashboard.
 
@@ -12,10 +12,12 @@ The project provides a deployment wizard. Each user deploys to their own Cloudfl
 
 The home screen shows a legal notice and offers direct access to the admin dashboard. After deployment, the app fills in the site address and administrator password. For an existing site, enter them manually. Sign in to the dashboard in your browser. The password remains in the current app window and can be copied or cleared.
 
-1. Download the [Windows x64 installer](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.3.2/OpenProxySetup-windows-x64-setup.exe), double-click it, and select an installation location. Setup creates a `自建机场` folder and opens the wizard. To reopen the app, double-click `OpenProxySetup.exe` in that folder.
+1. Download the [Windows x64 installer](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.0/OpenProxySetup-windows-x64-setup.exe), double-click it, and select an installation location. Setup creates a `自建机场` folder and opens the wizard. To reopen the app, double-click `OpenProxySetup.exe` in that folder.
 2. Use the app’s links to sign up for or sign in to [Cloudflare](https://dash.cloudflare.com/sign-up) and [DNSHE](https://my.dnshe.com/). Obtain a domain in DNSHE, and create an API Key and API Secret under Domain Management → API Management. In step 3, select “开始 Cloudflare 授权” (Start Cloudflare authorization), complete authorization in the browser, then select “我已完成授权，继续” (I’ve authorized, continue). The app verifies authorization before opening the deployment screen. Enter your account credentials on Cloudflare’s website.
 3. Enter the DNSHE domain, API Key, API Secret, and an administrator password of at least 12 characters. Start deployment. The app creates KV, Pages, and the secret, deploys the site, requests the custom domain binding in Pages, and uses the DNSHE API to add a CNAME pointing to `pages.dev`. Existing conflicting DNS records are preserved.
 4. When deployment succeeds, open the displayed admin address and sign in with the password you set. Copy a node or subscription link from the dashboard and import it into a compatible client. Available formats depend on the upstream version used for deployment. Use the displayed `pages.dev` address while the custom domain is taking effect.
+
+The deployment progress page shows Cloudflare authorization, KV creation, Pages publishing, and domain binding. Once Pages is published, you can open the temporary admin address. If domain binding fails, update the DNSHE credentials in the same app window and click Retry domain binding to reuse the existing Pages project and KV namespace.
 
 The window stays responsive and shows elapsed time during deployment. Allow roughly 3–10 minutes, depending on the network and browser authorization. DNS and certificate activation for the custom domain may take several more minutes to a few hours.
 
@@ -42,7 +44,7 @@ The platform and client list follows the [upstream edgetunnel documentation](htt
 
 Extract the entire `OpenProxySetup-windows-x64-portable.zip` archive and double-click `OpenProxySetup.exe`. Keep the EXE, `runtime`, `vendor`, and scripts in the same directory. The app uses Windows’ .NET Framework and Windows PowerShell 5.1. If it fails to launch, run `启动应用.cmd` to see the error.
 
-You can also download the [v1.3.2 CMD edition](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.3.2/OpenProxySetup-windows-x64-cmd-v1.3.2.zip). Extract the entire ZIP and double-click `OpenProxySetup.cmd`.
+You can also download the [v1.4.0 CMD edition](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.0/OpenProxySetup-windows-x64-cmd-v1.4.0.zip). Extract the entire ZIP and double-click `OpenProxySetup.cmd`.
 
 ## Packaging for maintainers
 
