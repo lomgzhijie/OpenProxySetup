@@ -59,3 +59,5 @@ DNSHE 的 API Key / Secret 是添加 CNAME 所必需的授权。应用只在本�
 ## 来源与许可证
 
 本项目使用 [edgetunnel 上游代码](https://github.com/cmliu/edgetunnel)，部署流程参照 [Cloudflare Pages 文档](https://developers.cloudflare.com/pages/)。本仓库的自有脚本和文档采用 MIT 许可证；包内上游代码采用 GPL-2.0，见 `vendor/edgetunnel/LICENSE`。打包的 Node.js 许可证在 `runtime/NODE-LICENSE`，Wrangler 及其依赖的许可证随 npm 包提供。再分发时须保留相应源码和许可证。
+
+发布包中的 edgetunnel 源文件和 GPL-2.0 许可证与[固定的上游提交](https://github.com/cmliu/edgetunnel/tree/a8ab11125ece9bc27983f609a6359be81b21050c)一致。部署脚本直接复制 `_worker.js`。下载发布页上的 `Source code (zip)` 可查看对应版本的项目源码和构建脚本。

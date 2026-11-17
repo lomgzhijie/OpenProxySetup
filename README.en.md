@@ -59,3 +59,5 @@ The app passes the administrator password to Cloudflare in the current process a
 ## Sources and licenses
 
 The project uses [upstream edgetunnel code](https://github.com/cmliu/edgetunnel) and follows the [Cloudflare Pages documentation](https://developers.cloudflare.com/pages/) for deployment. The repository’s own scripts and documentation are MIT-licensed. The bundled upstream code is GPL-2.0 licensed. See `vendor/edgetunnel/LICENSE`. The bundled Node.js license is in `runtime/NODE-LICENSE`, and Wrangler and its dependencies ship their licenses in their npm packages. Retain the corresponding source code and licenses when redistributing.
+
+The bundled edgetunnel source and GPL-2.0 license match the [pinned upstream commit](https://github.com/cmliu/edgetunnel/tree/a8ab11125ece9bc27983f609a6359be81b21050c). The deployment script copies `_worker.js` as shipped. For the application source and build scripts for each release, use its `Source code (zip)` download.

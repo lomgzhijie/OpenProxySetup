@@ -59,3 +59,5 @@ PowerShell で `npm ci --prefix runtime` を実行して指定バージョンの
 ## 出典とライセンス
 
 本プロジェクトは [edgetunnel の上流コード](https://github.com/cmliu/edgetunnel) を使用し、デプロイは [Cloudflare Pages のドキュメント](https://developers.cloudflare.com/pages/) を参照しています。このリポジトリ独自のスクリプトとドキュメントは MIT ライセンス、同梱の上流コードは GPL-2.0 ライセンスです。詳細は `vendor/edgetunnel/LICENSE` を参照してください。同梱の Node.js のライセンスは `runtime/NODE-LICENSE` にあり、Wrangler と依存関係のライセンスは npm パッケージに含まれています。再配布時には該当するソースコードとライセンスを保持してください。
+
+同梱の edgetunnel ソースと GPL-2.0 ライセンスは[固定した上流コミット](https://github.com/cmliu/edgetunnel/tree/a8ab11125ece9bc27983f609a6359be81b21050c)と一致します。デプロイスクリプトは同梱の `_worker.js` をそのままコピーします。各リリースのアプリのソースとビルドスクリプトは `Source code (zip)` から入手できます。

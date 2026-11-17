@@ -59,3 +59,5 @@ PowerShell에서 `npm ci --prefix runtime`을 실행하여 고정된 버전의 W
 ## 출처 및 라이선스
 
 이 프로젝트는 [edgetunnel 업스트림 코드](https://github.com/cmliu/edgetunnel)를 사용하며 배포 과정은 [Cloudflare Pages 문서](https://developers.cloudflare.com/pages/)를 참고합니다. 저장소 자체의 스크립트와 문서는 MIT 라이선스이며, 함께 제공되는 업스트림 코드는 GPL-2.0 라이선스입니다. 자세한 내용은 `vendor/edgetunnel/LICENSE`를 참조하세요. Node.js 라이선스는 `runtime/NODE-LICENSE`에 있으며 Wrangler와 종속 패키지의 라이선스는 npm 패키지에 포함됩니다. 재배포할 때는 해당 소스 코드와 라이선스를 보존해야 합니다.
+
+동봉한 edgetunnel 소스와 GPL-2.0 라이선스는 [고정된 업스트림 커밋](https://github.com/cmliu/edgetunnel/tree/a8ab11125ece9bc27983f609a6359be81b21050c)과 일치합니다. 배포 스크립트는 동봉된 `_worker.js`를 그대로 복사합니다. 각 릴리스의 앱 소스와 빌드 스크립트는 `Source code (zip)`에서 받을 수 있습니다.
