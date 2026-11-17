@@ -1,7 +1,6 @@
 ﻿# Windows PowerShell 5.1 desktop wizard. Keep this file UTF-8 with BOM.
 $ErrorActionPreference = 'Stop'
 $deployScript = Join-Path $PSScriptRoot 'deploy.ps1'
-$authLauncher = Join-Path $PSScriptRoot 'Cloudflare授权.cmd'
 $bundledNode = Join-Path $PSScriptRoot 'runtime\node.exe'
 $bundledWrangler = Join-Path $PSScriptRoot 'runtime\node_modules\wrangler\bin\wrangler.js'
 Add-Type -AssemblyName System.Windows.Forms
@@ -9,7 +8,7 @@ Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $form = New-Object Windows.Forms.Form
-$form.Text = '自建机场 · 一步一步部署订阅网站 v1.3'
+$form.Text = '自建机场 · 一步一步部署订阅网站 v1.3.2'
 $proxyScript = Join-Path $PSScriptRoot 'proxy.ps1'
 . $proxyScript
 $form.Size = New-Object Drawing.Size(920,740)
@@ -74,7 +73,7 @@ $title = Add-Text $homePage '自建机场' 30 30 720 55
 $title.Font = New-Object Drawing.Font('Microsoft YaHei UI',24)
 $legal = Add-Text $homePage '使用 VPN 或代理服务前，请了解并遵守所在地适用的法律法规。' 30 100 740 60
 $legal.ForeColor = [Drawing.Color]::DarkGoldenrod
-[void](Add-Text $homePage '首次使用可开始部署；已有站点可直接进入后台管理。' 30 165 740 38)
+[void](Add-Text $homePage '开始前请准备可访问 Cloudflare 的 VPN 环境。首次使用请选择「开始部署」。' 30 165 740 48)
 Add-Action $homePage '开始部署' 30 220 160 { $tabs.SelectedIndex = 1 }
 Add-Action $homePage '管理已有站点' 210 220 160 { $tabs.SelectedTab = $managePage }
 $tabs.TabPages.Add($homePage)
@@ -106,7 +105,7 @@ Secret 通常只显示一次；创建后复制到第 4 步的输入框。
 Add-GuidePage '3 登录 Cloudflare' @'
 点击下方链接注册或登录自己的 Cloudflare 账号。
 
-你不需要自己创建 KV、Pages 或 DNS 记录。
+你不需要自己创建 KV、Pages 或 DNS 记录。若浏览器授权失败，但部署 API 可访问，可按 README 中的备用方式使用 Cloudflare API Token。设置后从同一个 PowerShell 窗口启动应用，直接点击“我已完成授权，继续”。
 点击本页“开始 Cloudflare 授权”。授权工具会打开浏览器。
 在浏览器里完成登录和授权，再回到本页点击“我已完成授权，继续”。
 应用验证授权有效后才会进入第 4 步，不会一直卡在等待中。
@@ -121,7 +120,6 @@ $authButton = New-Object Windows.Forms.Button
 $authButton.Text = '开始 Cloudflare 授权'
 $authButton.Location = New-Object Drawing.Point(30,70)
 $authButton.Size = New-Object Drawing.Size(240,45)
-$authButton.add_Click({ Start-Process -FilePath $authLauncher -WindowStyle Normal })
 $authPage.Controls.Add($authButton)
 $verifiedButton = New-Object Windows.Forms.Button
 $verifiedButton.Text = '我已完成授权，继续'
@@ -135,6 +133,9 @@ $verifiedButton.add_Click({
         if ($LASTEXITCODE -ne 0) { throw 'Cloudflare 授权尚未完成。请先在打开的浏览器里完成授权。' }
         $auth = $json | ConvertFrom-Json
         if (-not $auth.token) { throw 'Cloudflare 授权尚未完成。' }
+        if ($auth.type -eq 'api_token' -and $env:CLOUDFLARE_ACCOUNT_ID -notmatch '^[a-fA-F0-9]{32}$') {
+            throw '请在启动应用前设置 32 位的 CLOUDFLARE_ACCOUNT_ID。'
+        }
         $script:cloudflareVerified = $true
         $next.Enabled = $true
         $tabs.SelectedTab = $deployPage
@@ -142,6 +143,102 @@ $verifiedButton.add_Click({
     finally { $ErrorActionPreference = $oldPreference; $json = $null; $auth = $null }
 })
 $authPage.Controls.Add($verifiedButton)
+
+$authStatus = Add-Text $authPage '' 550 70 245 55
+$authTimer = New-Object Windows.Forms.Timer
+$authTimer.Interval = 200
+$script:oauthProcess = $null
+$script:oauthLine = $null
+$script:oauthErrors = $null
+$script:oauthBrowserOpened = $false
+
+function Stop-BrowserAuthorization {
+    $authTimer.Stop()
+    if ($script:oauthProcess) {
+        try {
+            if (-not $script:oauthProcess.HasExited) { $script:oauthProcess.Kill() }
+        } catch {} finally {
+            $script:oauthProcess.Dispose()
+        }
+    }
+    $script:oauthProcess = $null
+    $script:oauthLine = $null
+    $script:oauthErrors = $null
+    $authButton.Enabled = $true
+    $verifiedButton.Enabled = $true
+}
+
+$authButton.add_Click({
+    if ($script:oauthProcess) { return }
+    if ($env:CLOUDFLARE_API_TOKEN) {
+        $authStatus.Text = '已设置 API Token，请直接点击继续。'
+        return
+    }
+
+    $authButton.Enabled = $false
+    $verifiedButton.Enabled = $false
+    $script:cloudflareVerified = $false
+    $next.Enabled = $false
+    $script:oauthBrowserOpened = $false
+    $authStatus.Text = '正在准备授权链接…'
+    try {
+        # Use the bundled CLI directly so the process we monitor owns the OAuth callback.
+        $loginCli = Join-Path (Split-Path -Parent (Split-Path -Parent $bundledWrangler)) 'wrangler-dist\cli.js'
+        $start = New-Object Diagnostics.ProcessStartInfo
+        $start.FileName = $bundledNode
+        $start.Arguments = '--no-warnings "' + $loginCli + '" login --no-browser'
+        $start.WorkingDirectory = $PSScriptRoot
+        $start.UseShellExecute = $false
+        $start.CreateNoWindow = $true
+        $start.RedirectStandardOutput = $true
+        $start.RedirectStandardError = $true
+        $script:oauthProcess = [Diagnostics.Process]::Start($start)
+        $script:oauthLine = $script:oauthProcess.StandardOutput.ReadLineAsync()
+        $script:oauthErrors = $script:oauthProcess.StandardError.ReadToEndAsync()
+        $authTimer.Start()
+    } catch {
+        Stop-BrowserAuthorization
+        $authStatus.Text = '无法启动授权，请检查应用文件后重试。'
+    }
+})
+
+$authTimer.add_Tick({
+    try {
+        while ($script:oauthLine -and $script:oauthLine.IsCompleted) {
+            $line = $script:oauthLine.GetAwaiter().GetResult()
+            if ($null -eq $line) {
+                $script:oauthLine = $null
+                break
+            }
+            $script:oauthLine = $script:oauthProcess.StandardOutput.ReadLineAsync()
+            if (-not $script:oauthBrowserOpened -and $line -match 'Visit this link to authenticate:\s*(https://[^\s]+)') {
+                $oauthUrl = [uri]$Matches[1]
+                if ($oauthUrl.Scheme -eq 'https' -and $oauthUrl.Host -eq 'dash.cloudflare.com' -and $oauthUrl.AbsolutePath -eq '/oauth2/auth') {
+                    Start-Process -FilePath $oauthUrl.AbsoluteUri
+                    $script:oauthBrowserOpened = $true
+                    $authStatus.Text = '请在浏览器完成授权。'
+                }
+            }
+        }
+        if ($script:oauthProcess.HasExited -and -not $script:oauthLine) {
+            if ($script:oauthProcess.ExitCode -eq 0 -and $script:oauthBrowserOpened) {
+                $authStatus.Text = '授权已结束，请点击继续验证。'
+            } else {
+                $authStatus.Text = '未完成授权，请检查网络后重试。'
+            }
+            Stop-BrowserAuthorization
+        }
+    } catch {
+        Stop-BrowserAuthorization
+        $authStatus.Text = '无法打开授权页，请重试。'
+    }
+})
+$form.add_FormClosed({
+    Stop-BrowserAuthorization
+    $authTimer.Dispose()
+})
+
+
 
 $deployPage = New-Object Windows.Forms.TabPage
 $deployPage.Text = '4 填写并部署'

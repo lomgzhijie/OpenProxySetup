@@ -1,6 +1,6 @@
 ﻿$ErrorActionPreference='Stop'
 $root=Split-Path -Parent $MyInvocation.MyCommand.Path
-$out=Join-Path (Split-Path -Parent $root) '自建机场-Windows-EXE-v1.3.1.zip'
+$out=Join-Path (Split-Path -Parent $root) 'OpenProxySetup-windows-x64-portable.zip'
 & (Join-Path $root '构建应用.ps1')
 $files=@('自建机场.exe','启动应用.cmd','Cloudflare授权.cmd','app.ps1','deploy.ps1','dnshe.ps1','proxy.ps1','links.ps1','README.md','README.en.md','README.ja.md','README.ko.md','LICENSE')
 foreach($file in $files){ if(-not(Test-Path (Join-Path $root $file))){throw "缺少文件：$file"} }

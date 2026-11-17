@@ -32,6 +32,24 @@ function Set-AdminSecret([string]$Value) {
 }
 
 function Test-CloudflareAuth {
+    if ($env:CLOUDFLARE_API_TOKEN) {
+        $accountId = $env:CLOUDFLARE_ACCOUNT_ID
+        if ($accountId -notmatch '^[a-fA-F0-9]{32}$') {
+            throw 'API Token 模式需要设置 32 位的 CLOUDFLARE_ACCOUNT_ID。'
+        }
+        $headers = @{ Authorization = 'Bearer ' + $env:CLOUDFLARE_API_TOKEN }
+        try {
+            $accountsPage = Invoke-RestMethod -Uri "https://api.cloudflare.com/client/v4/accounts/$accountId/pages/projects?per_page=1" -Headers $headers -Method Get -TimeoutSec 8 -MaximumRedirection 0
+            if (-not $accountsPage.success) { throw 'Cloudflare API 拒绝读取项目。' }
+            return $true
+        } catch {
+            $responseProperty = $_.Exception.PSObject.Properties['Response']
+            if ($responseProperty -and $responseProperty.Value -and [int]$responseProperty.Value.StatusCode -in @(401,403)) {
+                throw 'Cloudflare 拒绝 API Token。请核对 Token、账号 ID 和 Pages 权限。'
+            }
+            throw 'Cloudflare API Token 验证失败。请核对账号 ID，并确认当前 VPN 环境可访问 Cloudflare API。'
+        } finally { $headers.Clear() }
+    }
     $prior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {

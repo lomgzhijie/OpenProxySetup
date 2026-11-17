@@ -7,8 +7,8 @@ using System.Windows.Forms;
 [assembly: AssemblyTitle("自建机场")]
 [assembly: AssemblyProduct("自建机场")]
 [assembly: AssemblyDescription("Windows 部署向导")]
-[assembly: AssemblyVersion("1.3.1.0")]
-[assembly: AssemblyFileVersion("1.3.1.0")]
+[assembly: AssemblyVersion("1.3.2.0")]
+[assembly: AssemblyFileVersion("1.3.2.0")]
 
 internal static class Launcher
 {
