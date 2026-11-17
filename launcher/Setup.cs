@@ -27,7 +27,7 @@ internal static class Setup
                 if (picker.ShowDialog() != DialogResult.OK) return 0;
                 string destination = Path.Combine(picker.SelectedPath, "自建机场");
                 Install(destination);
-                Process.Start(Path.Combine(destination, "自建机场.exe"));
+                Process.Start(Path.Combine(destination, "OpenProxySetup.exe"));
             }
             return 0;
         }

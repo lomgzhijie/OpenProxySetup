@@ -8,7 +8,7 @@ Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $form = New-Object Windows.Forms.Form
-$form.Text = '自建机场 · 一步一步部署订阅网站 v1.3.2'
+$form.Text = '自建机场 · 一步一步部署订阅网站 v1.3.3'
 $proxyScript = Join-Path $PSScriptRoot 'proxy.ps1'
 . $proxyScript
 $form.Size = New-Object Drawing.Size(920,740)

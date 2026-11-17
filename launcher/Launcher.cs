@@ -7,8 +7,8 @@ using System.Windows.Forms;
 [assembly: AssemblyTitle("自建机场")]
 [assembly: AssemblyProduct("自建机场")]
 [assembly: AssemblyDescription("Windows 部署向导")]
-[assembly: AssemblyVersion("1.3.2.0")]
-[assembly: AssemblyFileVersion("1.3.2.0")]
+[assembly: AssemblyVersion("1.3.3.0")]
+[assembly: AssemblyFileVersion("1.3.3.0")]
 
 internal static class Launcher
 {
@@ -30,7 +30,7 @@ internal static class Launcher
             {
                 if (!File.Exists(Path.Combine(root, relative)))
                     throw new FileNotFoundException("缺少运行文件：" + relative +
-                        "\n请完整解压下载包后，再运行「自建机场.exe」。");
+                        "\n请完整解压下载包后，再运行「OpenProxySetup.exe」。");
             }
             string powershell = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.System),

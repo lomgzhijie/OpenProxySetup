@@ -7,4 +7,5 @@ runtime/node_modules/
 *.secret
 *.log
 
+/OpenProxySetup.exe
 /自建机场.exe
