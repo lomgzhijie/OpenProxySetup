@@ -87,7 +87,8 @@ def build_page(project: Path, lang: str) -> str:
 <meta name="theme-color" content="#f6f8fc">
 <title>{title} · OpenProxySetup</title>
 <link rel="icon" type="image/png" sizes="64x64" href="../openproxysetup-icon.png">
-<link rel="stylesheet" href="../style.css?v=docs">
+<script src="../theme.js?v=1"></script>
+<link rel="stylesheet" href="../style.css?v=theme">
 </head>
 <body>
 <header class="top">
@@ -96,6 +97,10 @@ def build_page(project: Path, lang: str) -> str:
     <nav aria-label="{home}">
       <a href="../?lang={lang}">{home}</a>
       <a href="../?lang={lang}#downloads">{download}</a>
+      <div class="theme-controls" role="group">
+        <button type="button" data-set-theme="light"><span aria-hidden="true">☀</span></button>
+        <button type="button" data-set-theme="dark"><span aria-hidden="true">☾</span></button>
+      </div>
     </nav>
   </div>
 </header>
