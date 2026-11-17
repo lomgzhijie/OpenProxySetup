@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f6f8fc">
+<title>Documentation · OpenProxySetup</title>
+<link rel="icon" type="image/png" sizes="64x64" href="../openproxysetup-icon.png">
+<link rel="stylesheet" href="../style.css?v=docs">
+</head>
+<body>
+<header class="top">
+  <div class="shell nav">
+    <a class="brand" href="../?lang=en"><img class="mark" src="../openproxysetup-icon.png" width="35" height="35" alt="">OpenProxySetup</a>
+    <nav aria-label="Home">
+      <a href="../?lang=en">Home</a>
+      <a href="../?lang=en#downloads">Download</a>
+    </nav>
+  </div>
+</header>
+<main class="shell docs-layout">
+  <div class="docs-toolbar">
+    <p class="docs-title">Documentation</p>
+    <nav class="docs-languages" aria-label="Language">
+      <a href="./" hreflang="zh-CN" lang="zh-CN">简体中文</a>
+      <a href="en.html" hreflang="en" lang="en" aria-current="page">English</a>
+      <a href="ja.html" hreflang="ja" lang="ja">日本語</a>
+      <a href="ko.html" hreflang="ko" lang="ko">한국어</a>
+    </nav>
+  </div>
+  <aside class="docs-sidebar">
+    <nav aria-label="On this page">
+      <p>On this page</p>
+      <ul><li><a href="#download-and-use">Download and use</a></li>
+<li><a href="#client-compatibility">Client compatibility</a></li>
+<li><a href="#portable-zip">Portable ZIP</a></li>
+<li><a href="#packaging-for-maintainers">Packaging for maintainers</a></li>
+<li><a href="#how-it-works-and-scope">How it works and scope</a></li>
+<li><a href="#sources-and-licenses">Sources and licenses</a></li></ul>
+    </nav>
+  </aside>
+  <article class="docs-article">
+<h1>自建机场</h1>
+<p><a href="../?lang=en#downloads">Download Windows x64</a> · <a href="https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose">Report an issue</a> · <a href="https://github.com/lomgzhijie/OpenProxySetup/blob/main/CONTRIBUTING.md">Contribute</a></p>
+<p>This Windows deployment app signs in with your own Cloudflare account and lets you set an administrator password. It uses the bundled <a href="https://github.com/cmliu/edgetunnel">edgetunnel</a> source to create Cloudflare KV and Pages resources and displays a clickable site address. Open the site’s <code>/admin</code> page and enter the password to view nodes and subscription links in the upstream dashboard.</p>
+<p>The project provides a deployment wizard. Each user deploys to their own Cloudflare account. Shared nodes, accounts, and hosting are outside the scope of the project.</p>
+<h2 id="download-and-use">Download and use</h2>
+<p>The home screen shows a legal notice and offers direct access to the admin dashboard. After deployment, the app fills in the site address and administrator password. For an existing site, enter them manually. Sign in to the dashboard in your browser. The password remains in the current app window and can be copied or cleared.</p>
+<ol>
+<li>Download the <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.0/OpenProxySetup-windows-x64-setup.exe">Windows x64 installer</a>, double-click it, and select an installation location. Setup creates a <code>自建机场</code> folder and opens the wizard. To reopen the app, double-click <code>OpenProxySetup.exe</code> in that folder.</li>
+<li>Use the app’s links to sign up for or sign in to <a href="https://dash.cloudflare.com/sign-up">Cloudflare</a> and <a href="https://my.dnshe.com/">DNSHE</a>. Obtain a domain in DNSHE, and create an API Key and API Secret under Domain Management → API Management. In step 3, select “开始 Cloudflare 授权” (Start Cloudflare authorization), complete authorization in the browser, then select “我已完成授权，继续” (I’ve authorized, continue). The app verifies authorization before opening the deployment screen. Enter your account credentials on Cloudflare’s website.</li>
+<li>Enter the DNSHE domain, API Key, API Secret, and an administrator password of at least 12 characters. Start deployment. The app creates KV, Pages, and the secret, deploys the site, requests the custom domain binding in Pages, and uses the DNSHE API to add a CNAME pointing to <code>pages.dev</code>. Existing conflicting DNS records are preserved.</li>
+<li>When deployment succeeds, open the displayed admin address and sign in with the password you set. Copy a node or subscription link from the dashboard and import it into a compatible client. Available formats depend on the upstream version used for deployment. Use the displayed <code>pages.dev</code> address while the custom domain is taking effect.</li>
+</ol>
+<p>The deployment progress page shows Cloudflare authorization, KV creation, Pages publishing, and domain binding. Once Pages is published, you can open the temporary admin address. If domain binding fails, update the DNSHE credentials in the same app window and click Retry domain binding to reuse the existing Pages project and KV namespace.</p>
+<p>The window stays responsive and shows elapsed time during deployment. Allow roughly 3–10 minutes, depending on the network and browser authorization. DNS and certificate activation for the custom domain may take several more minutes to a few hours.</p>
+<p>The DNSHE API Key and Secret authorize adding the CNAME. The app uses them during the current session and keeps them out of project files. If existing DNS records conflict or DNSHE rejects the write, existing records are preserved. Use the <code>pages.dev</code> admin address while Cloudflare issues the certificate and DNS propagates. The Cloudflare Pages documentation allows a subdomain managed by external DNS to be bound via CNAME without creating a Cloudflare zone for it.</p>
+<h3>System requirements</h3>
+<ul>
+<li>Windows 10 or 11</li>
+<li>Network access to Cloudflare and DNSHE. Node.js, Wrangler, and the upstream node source are bundled. Git and a separate Node.js installation are unnecessary for running the app.</li>
+</ul>
+<h2 id="client-compatibility">Client compatibility</h2>
+<p>The platform and client list follows the <a href="https://github.com/cmliu/edgetunnel">upstream edgetunnel documentation</a>. Check that your client version supports your subscription format before importing.</p>
+<div class="docs-table" role="region" aria-label="Client compatibility" tabindex="0">
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Clients</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Windows</td>
+<td><a href="https://github.com/2dust/v2rayN/releases">v2rayN</a>, <a href="https://github.com/hiddify/hiddify-app/releases">Hiddify</a>, <a href="https://github.com/chen08209/FlClash/releases">FlClash</a>, <a href="https://github.com/mihomo-party-org/clash-party/releases">mihomo-party</a>, <a href="https://github.com/clash-verge-rev/clash-verge-rev/releases">Clash Verge Rev</a>, <a href="https://github.com/KaringX/clashmi/releases">Clashmi</a>, <a href="https://github.com/GtxFury/FlyClash/releases">FlyClash</a>, <a href="https://github.com/KaringX/karing/releases">Karing</a>, <a href="https://github.com/appshubcc/Bettbox/releases">Bettbox</a></td>
+</tr>
+<tr>
+<td>Android</td>
+<td><a href="https://github.com/2dust/v2rayNG/releases">v2rayNG</a>, <a href="https://github.com/MetaCubeX/ClashMetaForAndroid/releases/">ClashMetaForAndroid</a>, <a href="https://github.com/chen08209/FlClash/releases">FlClash</a>, <a href="https://github.com/KaringX/clashmi/releases">Clashmi</a>, <a href="https://github.com/hiddify/hiddify-app/releases">Hiddify</a>, <a href="https://github.com/MatsuriDayo/NekoBoxForAndroid/releases">NekoBox</a>, <a href="https://github.com/GtxFury/FlyClash/releases">FlyClash</a>, <a href="https://github.com/KaringX/karing/releases">Karing</a>, <a href="https://github.com/appshubcc/Bettbox/releases">Bettbox</a></td>
+</tr>
+<tr>
+<td>iOS</td>
+<td>Surge, Shadowrocket, Stash, <a href="https://github.com/hiddify/hiddify-app/releases">Hiddify</a>, Loon, Egern, <a href="https://github.com/KaringX/clashmi/releases">Clashmi</a>, <a href="https://github.com/KaringX/karing/releases">Karing</a>, Quantumult X</td>
+</tr>
+<tr>
+<td>macOS</td>
+<td><a href="https://github.com/chen08209/FlClash/releases">FlClash</a>, <a href="https://github.com/mihomo-party-org/clash-party/releases">mihomo-party</a>, <a href="https://github.com/clash-verge-rev/clash-verge-rev/releases">Clash Verge Rev</a>, Surge, <a href="https://github.com/KaringX/clashmi/releases">Clashmi</a>, <a href="https://github.com/KaringX/karing/releases">Karing</a>, <a href="https://github.com/GtxFury/FlyClash/releases">FlyClash</a></td>
+</tr>
+<tr>
+<td>HarmonyOS</td>
+<td><a href="https://github.com/xiaobaigroup/ClashBox/releases">ClashBox</a></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="portable-zip">Portable ZIP</h2>
+<p>Extract the entire <code>OpenProxySetup-windows-x64-portable.zip</code> archive and double-click <code>OpenProxySetup.exe</code>. Keep the EXE, <code>runtime</code>, <code>vendor</code>, and scripts in the same directory. The app uses Windows’ .NET Framework and Windows PowerShell 5.1. If it fails to launch, run <code>启动应用.cmd</code> to see the error.</p>
+<p>You can also download the <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.0/OpenProxySetup-windows-x64-cmd-v1.4.0.zip">v1.4.0 CMD edition</a>. Extract the entire ZIP and double-click <code>OpenProxySetup.cmd</code>.</p>
+<h2 id="packaging-for-maintainers">Packaging for maintainers</h2>
+<p>Run <code>npm ci --prefix runtime</code> in PowerShell to install the pinned Wrangler version, then place the Windows x64 <code>node.exe</code> and its <code>NODE-LICENSE</code> in <code>runtime</code>. Run <code>./打包发布.ps1</code> in Windows PowerShell 5.1 to compile the EXE and build the portable and CMD ZIP archives. Run <code>./构建应用.ps1</code> to compile the launcher separately, or <code>./构建安装程序.ps1</code> to turn the ZIP into an installer EXE. Launcher source is in <code>launcher/Launcher.cs</code>. These commands are for maintainers. To launch from source, run <code>./app.ps1</code>.</p>
+<h2 id="how-it-works-and-scope">How it works and scope</h2>
+<ol>
+<li>The package bundles a pinned upstream <code>_worker.js</code>, its GPL-2.0 license, and the upstream commit ID. The app uses the bundled files at runtime without running <code>git clone</code>.</li>
+<li>The app uses Cloudflare’s official Wrangler CLI for browser authorization, KV creation, setting the <code>ADMIN</code> secret, and creating and deploying the Pages project. It binds the custom domain through the Cloudflare Pages API and adds the CNAME through the DNSHE API.</li>
+<li>The app displays <code>https://&lt;project-name&gt;.pages.dev/admin</code>, the admin dashboard address. The upstream dashboard generates the subscription link.</li>
+</ol>
+<p>The app passes the administrator password to Cloudflare in the current process and keeps it out of project files. Keep passwords and subscription links private. Cloudflare’s free quotas, platform rules, and upstream features may change. Follow local laws and the platform terms.</p>
+<h2 id="sources-and-licenses">Sources and licenses</h2>
+<p>The project uses <a href="https://github.com/cmliu/edgetunnel">upstream edgetunnel code</a> and follows the <a href="https://developers.cloudflare.com/pages/">Cloudflare Pages documentation</a> for deployment. The repository’s own scripts and documentation are MIT-licensed. The bundled upstream code is GPL-2.0 licensed. See <code>vendor/edgetunnel/LICENSE</code>. The bundled Node.js license is in <code>runtime/NODE-LICENSE</code>, and Wrangler and its dependencies ship their licenses in their npm packages. Retain the corresponding source code and licenses when redistributing.</p>
+<p>The bundled edgetunnel source and GPL-2.0 license match the <a href="https://github.com/cmliu/edgetunnel/tree/a8ab11125ece9bc27983f609a6359be81b21050c">pinned upstream commit</a>. The deployment script copies <code>_worker.js</code> as shipped. For the application source and build scripts for each release, use its <code>Source code (zip)</code> download.</p>
+
+  </article>
+</main>
+<footer class="shell footer"><a class="brand" href="../?lang=en">OpenProxySetup</a></footer>
+</body>
+</html>

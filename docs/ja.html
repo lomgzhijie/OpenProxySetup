@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f6f8fc">
+<title>ドキュメント · OpenProxySetup</title>
+<link rel="icon" type="image/png" sizes="64x64" href="../openproxysetup-icon.png">
+<link rel="stylesheet" href="../style.css?v=docs">
+</head>
+<body>
+<header class="top">
+  <div class="shell nav">
+    <a class="brand" href="../?lang=ja"><img class="mark" src="../openproxysetup-icon.png" width="35" height="35" alt="">OpenProxySetup</a>
+    <nav aria-label="ホーム">
+      <a href="../?lang=ja">ホーム</a>
+      <a href="../?lang=ja#downloads">ダウンロード</a>
+    </nav>
+  </div>
+</header>
+<main class="shell docs-layout">
+  <div class="docs-toolbar">
+    <p class="docs-title">ドキュメント</p>
+    <nav class="docs-languages" aria-label="言語">
+      <a href="./" hreflang="zh-CN" lang="zh-CN">简体中文</a>
+      <a href="en.html" hreflang="en" lang="en">English</a>
+      <a href="ja.html" hreflang="ja" lang="ja" aria-current="page">日本語</a>
+      <a href="ko.html" hreflang="ko" lang="ko">한국어</a>
+    </nav>
+  </div>
+  <aside class="docs-sidebar">
+    <nav aria-label="このページの目次">
+      <p>このページの目次</p>
+      <ul><li><a href="#ダウンロードと使い方">ダウンロードと使い方</a></li>
+<li><a href="#対応クライアント">対応クライアント</a></li>
+<li><a href="#zip-ポータブル版">ZIP ポータブル版</a></li>
+<li><a href="#メンテナー向けのパッケージ作成">メンテナー向けのパッケージ作成</a></li>
+<li><a href="#動作の仕組みと範囲">動作の仕組みと範囲</a></li>
+<li><a href="#出典とライセンス">出典とライセンス</a></li></ul>
+    </nav>
+  </aside>
+  <article class="docs-article">
+<h1>自建机场</h1>
+<p><a href="../?lang=ja#downloads">Windows x64 版をダウンロード</a> · <a href="https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose">問題を報告</a> · <a href="https://github.com/lomgzhijie/OpenProxySetup/blob/main/CONTRIBUTING.md">貢献する</a></p>
+<p>Windows 向けのデプロイアプリです。自分の Cloudflare アカウントでログインし、管理者パスワードを設定します。アプリは同梱の <a href="https://github.com/cmliu/edgetunnel">edgetunnel</a> ソースを使って Cloudflare KV と Pages を作成し、サイトのリンクを表示します。サイトの <code>/admin</code> を開き、設定したパスワードでログインすると、上流プロジェクトの管理画面でノードやサブスクリプションリンクを確認できます。</p>
+<p>本プロジェクトが提供するのはデプロイウィザードです。各ユーザーは自分の Cloudflare アカウントにデプロイします。共有ノード、アカウント、クラウドサービスの提供は対象外です。</p>
+<h2 id="ダウンロードと使い方">ダウンロードと使い方</h2>
+<p>ホーム画面には法令に関する注意事項があり、「后台管理」（管理画面）に直接進むこともできます。デプロイ後はサイトのアドレスと管理者パスワードが自動入力されます。既存のサイトの場合は手動で入力し、ブラウザーで管理画面にログインします。パスワードは現在のアプリのウィンドウ内に保持され、コピーや消去ができます。</p>
+<ol>
+<li><a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.0/OpenProxySetup-windows-x64-setup.exe">Windows x64 インストーラー</a>をダウンロードして実行し、インストール先を選択します。「自建机场」フォルダーが作られ、ウィザードが開きます。次回からはフォルダー内の <code>OpenProxySetup.exe</code> をダブルクリックします。</li>
+<li>アプリのリンクから <a href="https://dash.cloudflare.com/sign-up">Cloudflare</a> と <a href="https://my.dnshe.com/">DNSHE</a> に登録するかログインします。DNSHE でドメインを取得し、「ドメイン管理 → API 管理」で API Key と API Secret を作成します。手順 3 の「开始 Cloudflare 授权」でブラウザー認証を開始し、完了後に「我已完成授权，继续」を選択します。アプリは認証を確認してからデプロイ画面を開きます。Cloudflare アカウントの認証情報は Cloudflare のサイトで入力します。</li>
+<li>DNSHE ドメイン、API Key、API Secret、12 文字以上の管理者パスワードを入力してデプロイを開始します。アプリが KV、Pages、シークレットを作成してデプロイし、Pages にカスタムドメインの関連付けを申請します。さらに DNSHE API で <code>pages.dev</code> を指す CNAME を追加します。競合する既存の DNS レコードは保持されます。</li>
+<li>デプロイ完了後、表示された管理画面を開き、設定したパスワードでログインします。ノードまたはサブスクリプションリンクをコピーし、対応クライアントにインポートします。利用できる形式はデプロイ時の上流バージョンに依存します。カスタムドメインが有効になるまでは、表示された <code>pages.dev</code> アドレスを使えます。</li>
+</ol>
+<p>デプロイ進行画面では、Cloudflare の認証、KV の作成、Pages の公開、ドメインの関連付けの状況を確認できます。Pages の公開後は仮の管理画面を開けます。ドメインの関連付けに失敗した場合は、同じウィンドウで DNSHE の認証情報を修正し、関連付けを再試行すると、作成済みの Pages プロジェクトと KV を再利用できます。</p>
+<p>デプロイ中もウィンドウを操作でき、経過時間を確認できます。ネットワークやブラウザー認証の状況により、おおむね 3〜10 分かかります。カスタムドメインの DNS と証明書が有効になるまで、さらに数分から数時間かかる場合があります。</p>
+<p>DNSHE の API Key と API Secret は CNAME の追加に必要です。アプリは実行中のみ使用し、プロジェクトファイルには書き込みません。DNS レコードが競合する場合や DNSHE が書き込みを拒否した場合、既存レコードは保持されます。証明書の発行と DNS の反映を待つ間は、<code>pages.dev</code> の管理画面を使えます。Cloudflare Pages の公式ドキュメントでは、外部 DNS で管理するサブドメインを Cloudflare ゾーンに追加せず、CNAME で関連付けられます。</p>
+<h3>動作環境</h3>
+<ul>
+<li>Windows 10 または Windows 11</li>
+<li>Cloudflare と DNSHE にアクセスできるネットワーク。Node.js、Wrangler、上流のノード用ソースは同梱されています。実行時に Git や Node.js を別途インストールする必要はありません。</li>
+</ul>
+<h2 id="対応クライアント">対応クライアント</h2>
+<p>対応プラットフォームとクライアントは <a href="https://github.com/cmliu/edgetunnel">edgetunnel の上流ドキュメント</a>を参照しています。インポート前に、使用するバージョンがサブスクリプション形式に対応しているか確認してください。</p>
+<div class="docs-table" role="region" aria-label="対応クライアント" tabindex="0">
+<table>
+<thead>
+<tr>
+<th>プラットフォーム</th>
+<th>クライアント</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Windows</td>
+<td><a href="https://github.com/2dust/v2rayN/releases">v2rayN</a>, <a href="https://github.com/hiddify/hiddify-app/releases">Hiddify</a>, <a href="https://github.com/chen08209/FlClash/releases">FlClash</a>, <a href="https://github.com/mihomo-party-org/clash-party/releases">mihomo-party</a>, <a href="https://github.com/clash-verge-rev/clash-verge-rev/releases">Clash Verge Rev</a>, <a href="https://github.com/KaringX/clashmi/releases">Clashmi</a>, <a href="https://github.com/GtxFury/FlyClash/releases">FlyClash</a>, <a href="https://github.com/KaringX/karing/releases">Karing</a>, <a href="https://github.com/appshubcc/Bettbox/releases">Bettbox</a></td>
+</tr>
+<tr>
+<td>Android</td>
+<td><a href="https://github.com/2dust/v2rayNG/releases">v2rayNG</a>, <a href="https://github.com/MetaCubeX/ClashMetaForAndroid/releases/">ClashMetaForAndroid</a>, <a href="https://github.com/chen08209/FlClash/releases">FlClash</a>, <a href="https://github.com/KaringX/clashmi/releases">Clashmi</a>, <a href="https://github.com/hiddify/hiddify-app/releases">Hiddify</a>, <a href="https://github.com/MatsuriDayo/NekoBoxForAndroid/releases">NekoBox</a>, <a href="https://github.com/GtxFury/FlyClash/releases">FlyClash</a>, <a href="https://github.com/KaringX/karing/releases">Karing</a>, <a href="https://github.com/appshubcc/Bettbox/releases">Bettbox</a></td>
+</tr>
+<tr>
+<td>iOS</td>
+<td>Surge, Shadowrocket, Stash, <a href="https://github.com/hiddify/hiddify-app/releases">Hiddify</a>, Loon, Egern, <a href="https://github.com/KaringX/clashmi/releases">Clashmi</a>, <a href="https://github.com/KaringX/karing/releases">Karing</a>, Quantumult X</td>
+</tr>
+<tr>
+<td>macOS</td>
+<td><a href="https://github.com/chen08209/FlClash/releases">FlClash</a>, <a href="https://github.com/mihomo-party-org/clash-party/releases">mihomo-party</a>, <a href="https://github.com/clash-verge-rev/clash-verge-rev/releases">Clash Verge Rev</a>, Surge, <a href="https://github.com/KaringX/clashmi/releases">Clashmi</a>, <a href="https://github.com/KaringX/karing/releases">Karing</a>, <a href="https://github.com/GtxFury/FlyClash/releases">FlyClash</a></td>
+</tr>
+<tr>
+<td>HarmonyOS</td>
+<td><a href="https://github.com/xiaobaigroup/ClashBox/releases">ClashBox</a></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="zip-ポータブル版">ZIP ポータブル版</h2>
+<p><code>OpenProxySetup-windows-x64-portable.zip</code> をすべて展開し、<code>OpenProxySetup.exe</code> をダブルクリックします。EXE、<code>runtime</code>、<code>vendor</code>、各スクリプトは同じフォルダーに置いてください。Windows の .NET Framework と Windows PowerShell 5.1 を使用します。起動に失敗した場合は、<code>启动应用.cmd</code> を実行してエラーを確認できます。</p>
+<p><a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.0/OpenProxySetup-windows-x64-cmd-v1.4.0.zip">v1.4.0 CMD 版</a>も利用できます。ZIP をすべて展開し、<code>OpenProxySetup.cmd</code> をダブルクリックしてください。</p>
+<h2 id="メンテナー向けのパッケージ作成">メンテナー向けのパッケージ作成</h2>
+<p>PowerShell で <code>npm ci --prefix runtime</code> を実行して指定バージョンの Wrangler をインストールし、Windows x64 版の <code>node.exe</code> と <code>NODE-LICENSE</code> を <code>runtime</code> に置きます。Windows PowerShell 5.1 で <code>./打包发布.ps1</code> を実行すると、EXE をコンパイルして ポータブル版と CMD 版の ZIP を作成します。ランチャーだけをコンパイルする場合は <code>./构建应用.ps1</code>、ZIP からインストーラー EXE を作成する場合は <code>./构建安装程序.ps1</code> を実行します。ランチャーのソースは <code>launcher/Launcher.cs</code> にあります。これらのコマンドはメンテナー向けです。ソースから起動する場合は <code>./app.ps1</code> を実行します。</p>
+<h2 id="動作の仕組みと範囲">動作の仕組みと範囲</h2>
+<ol>
+<li>パッケージにはバージョンを固定した上流の <code>_worker.js</code>、GPL-2.0 ライセンス、コミット ID を同梱しています。実行時は同梱ファイルを使用し、<code>git clone</code> は行いません。</li>
+<li>Cloudflare 公式の Wrangler CLI でブラウザー認証、KV の作成、<code>ADMIN</code> シークレットの設定、Pages プロジェクトの作成とデプロイを行います。Cloudflare Pages API でカスタムドメインを関連付け、DNSHE API で CNAME を追加します。</li>
+<li>アプリは管理画面のアドレス <code>https://&lt;プロジェクト名&gt;.pages.dev/admin</code> を表示します。サブスクリプションリンクは上流の管理画面で生成されます。</li>
+</ol>
+<p>管理者パスワードは現在のプロセスから Cloudflare に渡され、プロジェクトファイルには保存されません。パスワードやサブスクリプションリンクは公開しないでください。Cloudflare の無料枠、プラットフォームのルール、上流機能は変更される可能性があります。利用時は現地の法令と利用規約に従ってください。</p>
+<h2 id="出典とライセンス">出典とライセンス</h2>
+<p>本プロジェクトは <a href="https://github.com/cmliu/edgetunnel">edgetunnel の上流コード</a> を使用し、デプロイは <a href="https://developers.cloudflare.com/pages/">Cloudflare Pages のドキュメント</a> を参照しています。このリポジトリ独自のスクリプトとドキュメントは MIT ライセンス、同梱の上流コードは GPL-2.0 ライセンスです。詳細は <code>vendor/edgetunnel/LICENSE</code> を参照してください。同梱の Node.js のライセンスは <code>runtime/NODE-LICENSE</code> にあり、Wrangler と依存関係のライセンスは npm パッケージに含まれています。再配布時には該当するソースコードとライセンスを保持してください。</p>
+<p>同梱の edgetunnel ソースと GPL-2.0 ライセンスは<a href="https://github.com/cmliu/edgetunnel/tree/a8ab11125ece9bc27983f609a6359be81b21050c">固定した上流コミット</a>と一致します。デプロイスクリプトは同梱の <code>_worker.js</code> をそのままコピーします。各リリースのアプリのソースとビルドスクリプトは <code>Source code (zip)</code> から入手できます。</p>
+
+  </article>
+</main>
+<footer class="shell footer"><a class="brand" href="../?lang=ja">OpenProxySetup</a></footer>
+</body>
+</html>

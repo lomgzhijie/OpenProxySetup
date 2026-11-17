@@ -37,7 +37,7 @@ const translations = {
 const select = document.querySelector("#language");
 const nodes = Array.from(document.querySelectorAll("[data-i]"));
 const chinese = new Map(nodes.map(node => [node, node.innerHTML]));
-const repo = "https://github.com/lomgzhijie/OpenProxySetup";
+const docsPaths = { "zh-CN": "docs/", en: "docs/en.html", ja: "docs/ja.html", ko: "docs/ko.html" };
 const titles = {
   "zh-CN": "OpenProxySetup — Windows 部署向导",
   en: "OpenProxySetup — Windows Deployment Wizard",
@@ -55,7 +55,7 @@ function changeLanguage(language) {
     else node.innerHTML = chinese.get(node);
   }
   for (const link of document.querySelectorAll(".docs")) {
-    link.href = dictionary ? repo + "/blob/main/README." + language + ".md" : repo + "#readme";
+    link.href = docsPaths[language];
   }
 }
 
