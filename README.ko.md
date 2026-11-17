@@ -26,6 +26,18 @@ CNAME을 추가하려면 DNSHE API Key와 API Secret이 필요합니다. 앱은 
 - Windows 10 또는 Windows 11
 - Cloudflare와 DNSHE에 접속 가능한 네트워크. Node.js, Wrangler, 업스트림 노드 소스가 포함되어 있어 Git이나 Node.js를 따로 설치할 필요가 없습니다.
 
+## 지원 클라이언트
+
+플랫폼과 클라이언트 목록은 [edgetunnel 업스트림 문서](https://github.com/cmliu/edgetunnel)를 참고했습니다. 가져오기 전에 사용 중인 클라이언트 버전이 구독 형식을 지원하는지 확인하세요.
+
+| 플랫폼 | 클라이언트 |
+| --- | --- |
+| Windows | [v2rayN](https://github.com/2dust/v2rayN/releases), [Hiddify](https://github.com/hiddify/hiddify-app/releases), [FlClash](https://github.com/chen08209/FlClash/releases), [mihomo-party](https://github.com/mihomo-party-org/clash-party/releases), [Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev/releases), [Clashmi](https://github.com/KaringX/clashmi/releases), [FlyClash](https://github.com/GtxFury/FlyClash/releases), [Karing](https://github.com/KaringX/karing/releases), [Bettbox](https://github.com/appshubcc/Bettbox/releases) |
+| Android | [v2rayNG](https://github.com/2dust/v2rayNG/releases), [ClashMetaForAndroid](https://github.com/MetaCubeX/ClashMetaForAndroid/releases/), [FlClash](https://github.com/chen08209/FlClash/releases), [Clashmi](https://github.com/KaringX/clashmi/releases), [Hiddify](https://github.com/hiddify/hiddify-app/releases), [NekoBox](https://github.com/MatsuriDayo/NekoBoxForAndroid/releases), [FlyClash](https://github.com/GtxFury/FlyClash/releases), [Karing](https://github.com/KaringX/karing/releases), [Bettbox](https://github.com/appshubcc/Bettbox/releases) |
+| iOS | [Surge](https://apps.apple.com/us/app/id1442620678), [Shadowrocket](https://apps.apple.com/us/app/id932747118), [Stash](https://apps.apple.com/us/app/id1596063349), [Hiddify](https://github.com/hiddify/hiddify-app/releases), [Loon](https://apps.apple.com/us/app/id1373567447), [Egern](https://apps.apple.com/us/app/id1616105820), [Clashmi](https://clashmi.app/download), [Karing](https://karing.app/), [Quantumult X](https://apps.apple.com/us/app/id1443988620) |
+| macOS | [FlClash](https://github.com/chen08209/FlClash/releases), [mihomo-party](https://github.com/mihomo-party-org/clash-party/releases), [Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev/releases), [Surge](https://nssurge.com/), [Clashmi](https://clashmi.app/download), [Karing](https://karing.app/), [FlyClash](https://github.com/GtxFury/FlyClash/releases) |
+| HarmonyOS | [ClashBox](https://github.com/xiaobaigroup/ClashBox/releases) |
+
 ## ZIP 포터블 버전
 
 `自建机场-Windows-EXE-v1.3.1.zip`의 전체 압축을 푼 후 `自建机场.exe`를 더블 클릭합니다. EXE, `runtime`, `vendor`, 스크립트를 같은 폴더에 둡니다. Windows의 .NET Framework와 Windows PowerShell 5.1을 사용합니다. 시작에 실패하면 `启动应用.cmd`를 실행해 오류를 확인할 수 있습니다.

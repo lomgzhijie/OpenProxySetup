@@ -26,6 +26,18 @@ The DNSHE API Key and Secret authorize adding the CNAME. The app uses them durin
 - Windows 10 or 11
 - Network access to Cloudflare and DNSHE. Node.js, Wrangler, and the upstream node source are bundled. Git and a separate Node.js installation are unnecessary for running the app.
 
+## Client compatibility
+
+The platform and client list follows the [upstream edgetunnel documentation](https://github.com/cmliu/edgetunnel). Check that your client version supports your subscription format before importing.
+
+| Platform | Clients |
+| --- | --- |
+| Windows | [v2rayN](https://github.com/2dust/v2rayN/releases), [Hiddify](https://github.com/hiddify/hiddify-app/releases), [FlClash](https://github.com/chen08209/FlClash/releases), [mihomo-party](https://github.com/mihomo-party-org/clash-party/releases), [Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev/releases), [Clashmi](https://github.com/KaringX/clashmi/releases), [FlyClash](https://github.com/GtxFury/FlyClash/releases), [Karing](https://github.com/KaringX/karing/releases), [Bettbox](https://github.com/appshubcc/Bettbox/releases) |
+| Android | [v2rayNG](https://github.com/2dust/v2rayNG/releases), [ClashMetaForAndroid](https://github.com/MetaCubeX/ClashMetaForAndroid/releases/), [FlClash](https://github.com/chen08209/FlClash/releases), [Clashmi](https://github.com/KaringX/clashmi/releases), [Hiddify](https://github.com/hiddify/hiddify-app/releases), [NekoBox](https://github.com/MatsuriDayo/NekoBoxForAndroid/releases), [FlyClash](https://github.com/GtxFury/FlyClash/releases), [Karing](https://github.com/KaringX/karing/releases), [Bettbox](https://github.com/appshubcc/Bettbox/releases) |
+| iOS | [Surge](https://apps.apple.com/us/app/id1442620678), [Shadowrocket](https://apps.apple.com/us/app/id932747118), [Stash](https://apps.apple.com/us/app/id1596063349), [Hiddify](https://github.com/hiddify/hiddify-app/releases), [Loon](https://apps.apple.com/us/app/id1373567447), [Egern](https://apps.apple.com/us/app/id1616105820), [Clashmi](https://clashmi.app/download), [Karing](https://karing.app/), [Quantumult X](https://apps.apple.com/us/app/id1443988620) |
+| macOS | [FlClash](https://github.com/chen08209/FlClash/releases), [mihomo-party](https://github.com/mihomo-party-org/clash-party/releases), [Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev/releases), [Surge](https://nssurge.com/), [Clashmi](https://clashmi.app/download), [Karing](https://karing.app/), [FlyClash](https://github.com/GtxFury/FlyClash/releases) |
+| HarmonyOS | [ClashBox](https://github.com/xiaobaigroup/ClashBox/releases) |
+
 ## Portable ZIP
 
 Extract the entire `自建机场-Windows-EXE-v1.3.1.zip` archive and double-click `自建机场.exe`. Keep the EXE, `runtime`, `vendor`, and scripts in the same directory. The app uses Windows’ .NET Framework and Windows PowerShell 5.1. If it fails to launch, run `启动应用.cmd` to see the error.

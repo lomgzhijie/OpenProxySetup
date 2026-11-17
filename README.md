@@ -26,6 +26,18 @@ DNSHE 的 API Key / Secret 是添加 CNAME 所必需的授权。应用只在本�
 - Windows 10/11
 - 可访问 Cloudflare 和 DNSHE 的网络。下载包已包含 Node.js、Wrangler 和上游节点源码，运行时无需另装 Git 或 Node.js
 
+## 客户端适配情况
+
+平台和客户端列表参考 [edgetunnel 上游文档](https://github.com/cmliu/edgetunnel)。导入前请确认客户端版本支持你的订阅格式。
+
+| 平台 | 客户端 |
+| --- | --- |
+| Windows | [v2rayN](https://github.com/2dust/v2rayN/releases), [Hiddify](https://github.com/hiddify/hiddify-app/releases), [FlClash](https://github.com/chen08209/FlClash/releases), [mihomo-party](https://github.com/mihomo-party-org/clash-party/releases), [Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev/releases), [Clashmi](https://github.com/KaringX/clashmi/releases), [FlyClash](https://github.com/GtxFury/FlyClash/releases), [Karing](https://github.com/KaringX/karing/releases), [Bettbox](https://github.com/appshubcc/Bettbox/releases) |
+| Android | [v2rayNG](https://github.com/2dust/v2rayNG/releases), [ClashMetaForAndroid](https://github.com/MetaCubeX/ClashMetaForAndroid/releases/), [FlClash](https://github.com/chen08209/FlClash/releases), [Clashmi](https://github.com/KaringX/clashmi/releases), [Hiddify](https://github.com/hiddify/hiddify-app/releases), [NekoBox](https://github.com/MatsuriDayo/NekoBoxForAndroid/releases), [FlyClash](https://github.com/GtxFury/FlyClash/releases), [Karing](https://github.com/KaringX/karing/releases), [Bettbox](https://github.com/appshubcc/Bettbox/releases) |
+| iOS | [Surge](https://apps.apple.com/us/app/id1442620678), [Shadowrocket](https://apps.apple.com/us/app/id932747118), [Stash](https://apps.apple.com/us/app/id1596063349), [Hiddify](https://github.com/hiddify/hiddify-app/releases), [Loon](https://apps.apple.com/us/app/id1373567447), [Egern](https://apps.apple.com/us/app/id1616105820), [Clashmi](https://clashmi.app/download), [Karing](https://karing.app/), [Quantumult X](https://apps.apple.com/us/app/id1443988620) |
+| macOS | [FlClash](https://github.com/chen08209/FlClash/releases), [mihomo-party](https://github.com/mihomo-party-org/clash-party/releases), [Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev/releases), [Surge](https://nssurge.com/), [Clashmi](https://clashmi.app/download), [Karing](https://karing.app/), [FlyClash](https://github.com/GtxFury/FlyClash/releases) |
+| 鸿蒙 | [ClashBox](https://github.com/xiaobaigroup/ClashBox/releases) |
+
 ## ZIP 免安装版
 
 完整解压 `自建机场-Windows-EXE-v1.3.1.zip` 后，双击 `自建机场.exe`。EXE 与 runtime、vendor 及脚本应放在同一个目录。运行依赖 Windows 自带的 .NET Framework 和 Windows PowerShell 5.1。启动失败时，可运行 `启动应用.cmd` 查看错误。
