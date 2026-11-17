@@ -42,7 +42,7 @@ DNSHE の API Key と API Secret は CNAME の追加に必要です。アプリ�
 
 `OpenProxySetup-windows-x64-portable.zip` をすべて展開し、`OpenProxySetup.exe` をダブルクリックします。EXE、`runtime`、`vendor`、各スクリプトは同じフォルダーに置いてください。Windows の .NET Framework と Windows PowerShell 5.1 を使用します。起動に失敗した場合は、`启动应用.cmd` を実行してエラーを確認できます。
 
-[v1.3 CMD 版](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.3.3/OpenProxySetup-windows-x64-cmd-v1.3.zip)も利用できます。ZIP をすべて展開し、`启动应用.cmd` をダブルクリックしてください。
+[v1.3.3 CMD 版](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.3.3/OpenProxySetup-windows-x64-cmd-v1.3.3.zip)も利用できます。ZIP をすべて展開し、`OpenProxySetup.cmd` をダブルクリックしてください。
 
 ## メンテナー向けのパッケージ作成
 

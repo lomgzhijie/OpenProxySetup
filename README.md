@@ -62,7 +62,7 @@ try {
 
 完整解压 `OpenProxySetup-windows-x64-portable.zip` 后，双击 `OpenProxySetup.exe`。EXE 与 runtime、vendor 及脚本应放在同一个目录。运行依赖 Windows 自带的 .NET Framework 和 Windows PowerShell 5.1。启动失败时，可运行 `启动应用.cmd` 查看错误。
 
-也可下载 [v1.3 CMD 版](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.3.3/OpenProxySetup-windows-x64-cmd-v1.3.zip)，完整解压后双击 `启动应用.cmd`。
+也可下载 [v1.3.3 CMD 版](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.3.3/OpenProxySetup-windows-x64-cmd-v1.3.3.zip)，完整解压后双击 `OpenProxySetup.cmd`。
 
 ## 项目维护者打包
 

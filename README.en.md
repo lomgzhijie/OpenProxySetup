@@ -42,7 +42,7 @@ The platform and client list follows the [upstream edgetunnel documentation](htt
 
 Extract the entire `OpenProxySetup-windows-x64-portable.zip` archive and double-click `OpenProxySetup.exe`. Keep the EXE, `runtime`, `vendor`, and scripts in the same directory. The app uses Windows’ .NET Framework and Windows PowerShell 5.1. If it fails to launch, run `启动应用.cmd` to see the error.
 
-You can also download the [v1.3 CMD edition](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.3.3/OpenProxySetup-windows-x64-cmd-v1.3.zip). Extract the entire ZIP and double-click `启动应用.cmd`.
+You can also download the [v1.3.3 CMD edition](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.3.3/OpenProxySetup-windows-x64-cmd-v1.3.3.zip). Extract the entire ZIP and double-click `OpenProxySetup.cmd`.
 
 ## Packaging for maintainers
 
