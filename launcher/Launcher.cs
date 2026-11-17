@@ -19,7 +19,7 @@ internal static class Launcher
         Application.EnableVisualStyles();
         string root = AppDomain.CurrentDomain.BaseDirectory;
         string[] required = {
-            "app.ps1", "deploy.ps1", "proxy.ps1", "dnshe.ps1", "links.ps1",
+            "app.ps1", "readme-view.ps1", "deploy.ps1", "proxy.ps1", "dnshe.ps1", "links.ps1",
             "Cloudflare授权.cmd", "runtime/node.exe",
             "runtime/node_modules/wrangler/bin/wrangler.js",
             "vendor/edgetunnel/_worker.js"

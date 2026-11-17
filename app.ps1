@@ -5,7 +5,7 @@ $bundledNode = Join-Path $PSScriptRoot 'runtime\node.exe'
 $bundledWrangler = Join-Path $PSScriptRoot 'runtime\node_modules\wrangler\bin\wrangler.js'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
-[System.Windows.Forms.Application]::EnableVisualStyles()
+. (Join-Path $PSScriptRoot 'readme-view.ps1')
 
 Add-Type -ReferencedAssemblies System.Windows.Forms,System.Drawing -TypeDefinition @'
 using System;
@@ -16,12 +16,142 @@ using System.Windows.Forms;
 public sealed class OpenProxySetupWindow : Form
 {
     private Rectangle normalBounds;
+    private bool hasTaskbarProperties;
+    private static readonly Guid AppPropertySet = new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3");
+
+    public OpenProxySetupWindow()
+    {
+        DoubleBuffered = true;
+        ResizeRedraw = true;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    private struct PropertyKey
+    {
+        public Guid Format;
+        public uint Id;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 24)]
+    private struct PropVariant
+    {
+        [FieldOffset(0)] public ushort Type;
+        [FieldOffset(8)] public IntPtr Text;
+    }
+
+    [ComImport, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IPropertyStore
+    {
+        void GetCount(out uint count);
+        void GetAt(uint index, out PropertyKey key);
+        void GetValue(ref PropertyKey key, out PropVariant value);
+        void SetValue(ref PropertyKey key, ref PropVariant value);
+        void Commit();
+    }
+
+    [DllImport("shell32.dll")]
+    private static extern int SHGetPropertyStoreForWindow(IntPtr window, ref Guid iid, out IPropertyStore store);
+
+    [DllImport("user32.dll")]
+    private static extern bool RedrawWindow(IntPtr window, IntPtr rect, IntPtr region, uint flags);
+
+    public static void MarkDocumentLink(IntPtr window)
+    {
+        const int charFormatSize = 116; // CHARFORMAT2W
+        IntPtr format = Marshal.AllocHGlobal(charFormatSize);
+        try
+        {
+            Marshal.Copy(new byte[charFormatSize], 0, format, charFormatSize);
+            Marshal.WriteInt32(format, 0, charFormatSize);
+            Marshal.WriteInt32(format, 4, 0x20); // CFM_LINK
+            Marshal.WriteInt32(format, 8, 0x20); // CFE_LINK
+            SendMessage(window, 0x444, new IntPtr(1), format); // EM_SETCHARFORMAT, SCF_SELECTION
+        }
+        finally { Marshal.FreeHGlobal(format); }
+    }
+
+    private static void SetWindowProperty(IPropertyStore store, uint id, string text)
+    {
+        PropertyKey key = new PropertyKey { Format = AppPropertySet, Id = id };
+        PropVariant value = new PropVariant();
+        if (text != null)
+        {
+            value.Type = 31; // VT_LPWSTR
+            value.Text = Marshal.StringToCoTaskMemUni(text);
+        }
+        try { store.SetValue(ref key, ref value); }
+        finally { if (value.Text != IntPtr.Zero) Marshal.FreeCoTaskMem(value.Text); }
+    }
+
+    public void SetTaskbarIdentity(string command, string iconPath)
+    {
+        Guid iid = typeof(IPropertyStore).GUID;
+        IPropertyStore store;
+        if (SHGetPropertyStoreForWindow(Handle, ref iid, out store) != 0) return;
+        hasTaskbarProperties = true;
+        try
+        {
+            SetWindowProperty(store, 2, command);
+            SetWindowProperty(store, 3, iconPath + ",0");
+            SetWindowProperty(store, 4, "Open Proxy Setup");
+            SetWindowProperty(store, 5, "OpenProxySetup.DeploymentWizard");
+        }
+        finally { Marshal.ReleaseComObject(store); }
+    }
+
+    protected override void OnFormClosed(FormClosedEventArgs args)
+    {
+        if (hasTaskbarProperties && IsHandleCreated)
+        {
+            Guid iid = typeof(IPropertyStore).GUID;
+            IPropertyStore store;
+            if (SHGetPropertyStoreForWindow(Handle, ref iid, out store) == 0)
+            {
+                try
+                {
+                    foreach (uint id in new uint[] { 5, 4, 3, 2 })
+                        SetWindowProperty(store, id, null);
+                }
+                catch (COMException) {}
+                finally { Marshal.ReleaseComObject(store); }
+            }
+        }
+        base.OnFormClosed(args);
+    }
 
     [DllImport("user32.dll")]
     private static extern bool ReleaseCapture();
 
     [DllImport("user32.dll")]
     private static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetDpiForWindow(IntPtr window);
+
+    public static void EnableDisplayScaling()
+    {
+        try
+        {
+            // The GUI runs inside a Windows PowerShell host, so set awareness on this thread.
+            SetThreadDpiAwarenessContext(new IntPtr(-2));
+        }
+        catch (EntryPointNotFoundException) {}
+    }
+
+    public int DisplayPixels(int logicalPixels)
+    {
+        if (!IsHandleCreated) return logicalPixels;
+        try
+        {
+            uint dpi = GetDpiForWindow(Handle);
+            if (dpi != 0) return (int)Math.Round(logicalPixels * dpi / 96.0);
+        }
+        catch (EntryPointNotFoundException) {}
+        return logicalPixels;
+    }
 
     protected override CreateParams CreateParams
     {
@@ -55,6 +185,13 @@ public sealed class OpenProxySetupWindow : Form
             MaximizedBounds = Screen.FromControl(this).WorkingArea;
             WindowState = FormWindowState.Maximized;
         }
+        BeginInvoke(new MethodInvoker(RefreshWindow));
+    }
+
+    private void RefreshWindow()
+    {
+        // Invalidate children and erase the former window bounds after the layout passes.
+        RedrawWindow(Handle, IntPtr.Zero, IntPtr.Zero, 0x0185);
     }
 
     protected override void WndProc(ref Message message)
@@ -72,7 +209,7 @@ public sealed class OpenProxySetupWindow : Form
         int hit = 1; // HTCLIENT
         if (WindowState == FormWindowState.Normal)
         {
-            const int grip = 7;
+            int grip = DisplayPixels(7);
             bool left = point.X < grip;
             bool right = point.X >= ClientSize.Width - grip;
             if (point.Y < grip) hit = left ? 13 : right ? 14 : 12;
@@ -85,24 +222,33 @@ public sealed class OpenProxySetupWindow : Form
 }
 '@
 
+[OpenProxySetupWindow]::EnableDisplayScaling()
+[System.Windows.Forms.Application]::EnableVisualStyles()
 $form = New-Object OpenProxySetupWindow
 $form.FormBorderStyle = 'None'
 $form.Text = 'Open Proxy Setup'
+$form.AutoScaleMode = 'None'
 $proxyScript = Join-Path $PSScriptRoot 'proxy.ps1'
 . $proxyScript
 
-$theme = @{
-    Background = [Drawing.ColorTranslator]::FromHtml('#F6F8FC')
-    Ink = [Drawing.ColorTranslator]::FromHtml('#14213B')
-    Blue = [Drawing.ColorTranslator]::FromHtml('#244ED8')
-    BlueHover = [Drawing.ColorTranslator]::FromHtml('#193CAE')
-    PaleBlue = [Drawing.ColorTranslator]::FromHtml('#EDF2FF')
-    Line = [Drawing.ColorTranslator]::FromHtml('#DCE5F2')
-    Muted = [Drawing.ColorTranslator]::FromHtml('#485771')
-    Green = [Drawing.ColorTranslator]::FromHtml('#216449')
-    Red = [Drawing.ColorTranslator]::FromHtml('#9E2C32')
-    White = [Drawing.Color]::White
+$palettes = @{
+    light = @{
+        Background='#F6F8FC'; Ink='#14213B'; Surface='#FFFFFF'; Blue='#2651D2'; BlueHover='#193AA8'
+        Primary='#244ED8'; PrimaryHover='#193CAE'; OnPrimary='#FCFDFF'; PaleBlue='#EDF2FF'
+        Line='#DCE5F2'; Muted='#485771'; Green='#216449'; Red='#9E2C32'; CloseHover='#FDE9EB'
+    }
+    dark = @{
+        Background='#101827'; Ink='#EDF3FF'; Surface='#192336'; Blue='#A5BFFF'; BlueHover='#BCCFFF'
+        Primary='#3259CB'; PrimaryHover='#2847A6'; OnPrimary='#FCFDFF'; PaleBlue='#253556'
+        Line='#33435F'; Muted='#B2C0D8'; Green='#93D5B9'; Red='#FFADB6'; CloseHover='#51323D'
+    }
 }
+foreach ($palette in $palettes.Values) {
+    foreach ($key in @($palette.Keys)) { $palette[$key] = [Drawing.ColorTranslator]::FromHtml($palette[$key]) }
+}
+$script:theme = $palettes.light
+$script:mode = 'light'
+$themeFile = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'OpenProxySetup\theme.txt'
 $form.ClientSize = New-Object Drawing.Size(900,670)
 $form.MinimumSize = New-Object Drawing.Size(863,630)
 $form.StartPosition = 'CenterScreen'
@@ -112,6 +258,127 @@ $form.ForeColor = $theme.Ink
 $iconPath = Join-Path $PSScriptRoot 'OpenProxySetup.ico'
 if (Test-Path -LiteralPath $iconPath) {
     $form.Icon = [Drawing.Icon]::new($iconPath)
+}
+
+function Set-TaskbarIdentity {
+    if (-not (Test-Path -LiteralPath $iconPath)) { return }
+    $exe = Join-Path $PSScriptRoot 'OpenProxySetup.exe'
+    $command = if (Test-Path -LiteralPath $exe) { '"' + $exe + '"' } else {
+        $powershell = Join-Path $PSHOME 'powershell.exe'
+        '"' + $powershell + '" -NoLogo -NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File "' +
+            (Join-Path $PSScriptRoot 'app.ps1') + '"'
+    }
+    try { $form.SetTaskbarIdentity($command, $iconPath) }
+    catch [Runtime.InteropServices.COMException] { Write-Warning '无法设置应用的任务栏图标。' }
+}
+
+function Get-ChildControls($parent) {
+    foreach ($child in $parent.Controls) {
+        $child
+        Get-ChildControls $child
+    }
+}
+
+function Set-DisplayLayout {
+    [void]$form.Handle
+    if ($form.DisplayPixels(96) -eq 96) { return }
+
+    # Set the existing logical bounds once. Restore anchoring after the docking layout
+    # has run so WinForms doesn't move right-anchored buttons twice.
+    $controls = @(foreach ($control in (Get-ChildControls $form)) {
+        [pscustomobject]@{ Control=$control; Bounds=$control.Bounds; Anchor=$control.Anchor }
+    })
+    $form.SuspendLayout()
+    foreach ($item in $controls) {
+        $item.Control.SuspendLayout()
+        if ($item.Control.Dock -eq 'None') { $item.Control.Anchor = 'Top,Left' }
+    }
+    try {
+        $form.MinimumSize = [Drawing.Size]::new($form.DisplayPixels($form.MinimumSize.Width), $form.DisplayPixels($form.MinimumSize.Height))
+        $form.ClientSize = [Drawing.Size]::new($form.DisplayPixels(900), $form.DisplayPixels(670))
+        foreach ($item in $controls) {
+            $bounds = $item.Bounds
+            $control = $item.Control
+            switch ($control.Dock) {
+                'None' { $control.SetBounds($form.DisplayPixels($bounds.X), $form.DisplayPixels($bounds.Y),
+                    $form.DisplayPixels($bounds.Width), $form.DisplayPixels($bounds.Height)) }
+                'Top' { $control.Height = $form.DisplayPixels($bounds.Height) }
+                'Bottom' { $control.Height = $form.DisplayPixels($bounds.Height) }
+            }
+        }
+    } finally {
+        $form.ResumeLayout($true)
+        foreach ($item in $controls) { $item.Control.ResumeLayout($true) }
+        foreach ($item in $controls) {
+            if ($item.Control.Dock -eq 'None') { $item.Control.Anchor = $item.Anchor }
+        }
+    }
+}
+
+function Update-ThemeColors($control, [hashtable]$map) {
+    foreach ($name in @('BackColor','ForeColor')) {
+        $value = $control.$name.ToArgb()
+        if ($map.ContainsKey($value)) { $control.$name = $map[$value] }
+    }
+    if ($control -is [Windows.Forms.LinkLabel]) {
+        foreach ($name in @('LinkColor','ActiveLinkColor','VisitedLinkColor')) {
+            $value = $control.$name.ToArgb()
+            if ($map.ContainsKey($value)) { $control.$name = $map[$value] }
+        }
+    }
+    if ($control -is [Windows.Forms.Button]) {
+        foreach ($name in @('BorderColor','MouseOverBackColor','MouseDownBackColor')) {
+            $value = $control.FlatAppearance.$name.ToArgb()
+            if ($map.ContainsKey($value)) { $control.FlatAppearance.$name = $map[$value] }
+        }
+    }
+    if ($control.Tag -is [hashtable] -and $control.Tag.ContainsKey('Fill')) {
+        foreach ($name in @('Fill','Line')) {
+            $value = $control.Tag[$name].ToArgb()
+            if ($map.ContainsKey($value)) { $control.Tag[$name] = $map[$value] }
+        }
+    }
+    foreach ($child in $control.Controls) { Update-ThemeColors $child $map }
+}
+
+function Set-Appearance([string]$mode, [switch]$Save) {
+    if (-not $palettes.ContainsKey($mode)) { return }
+    if ($script:mode -ne $mode) {
+        $nextPalette = $palettes[$mode]
+        $map = @{}
+        foreach ($key in $theme.Keys) { $map[$theme[$key].ToArgb()] = $nextPalette[$key] }
+        $script:theme = $nextPalette
+        $script:mode = $mode
+        Update-ThemeColors $form $map
+    }
+    foreach ($button in @($dayButton,$nightButton)) {
+        $selected = $button.Tag -eq $script:mode
+        $button.BackColor = if ($selected) { $theme.PaleBlue } else { $theme.Surface }
+        $button.ForeColor = if ($selected) { $theme.Blue } else { $theme.Muted }
+        $button.AccessibleDescription = if ($selected) { '当前模式' } else { '' }
+    }
+    $form.Invalidate($true)
+    if ($script:readmeData) { Show-Readme -KeepPosition }
+    if ($Save) {
+        try {
+            [void][IO.Directory]::CreateDirectory((Split-Path -Parent $themeFile))
+            [IO.File]::WriteAllText($themeFile,$mode)
+        } catch {}
+    }
+}
+
+function Read-Appearance {
+    if (Test-Path -LiteralPath $themeFile) {
+        try {
+            $saved = [IO.File]::ReadAllText($themeFile).Trim()
+            if ($palettes.ContainsKey($saved)) { return $saved }
+        } catch {}
+    }
+    try {
+        $personalize = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+        if ((Get-ItemPropertyValue -LiteralPath $personalize -Name AppsUseLightTheme) -eq 0) { return 'dark' }
+    } catch {}
+    return 'light'
 }
 
 function New-RoundedPath([int]$width, [int]$height, [int]$radius) {
@@ -132,7 +399,7 @@ function Add-Card($parent, [int]$x, [int]$y, [int]$w, [int]$h, [Drawing.Color]$f
     $card.Tag = @{ Fill = $fill; Radius = $radius; Line = $theme.Line }
     $card.add_Paint({
         param($sender, $event)
-        $path = New-RoundedPath ($sender.Width-1) ($sender.Height-1) $sender.Tag.Radius
+        $path = New-RoundedPath ($sender.Width-1) ($sender.Height-1) ($form.DisplayPixels($sender.Tag.Radius))
         $brush = New-Object Drawing.SolidBrush($sender.Tag.Fill)
         $border = New-Object Drawing.Pen($sender.Tag.Line)
         try {
@@ -166,6 +433,7 @@ function Add-Link($parent,[string]$value,[string]$url,[int]$x,[int]$y,[int]$widt
     $link.Bounds = New-Object Drawing.Rectangle($x,$y,$width,30)
     $link.LinkColor = $theme.Blue
     $link.ActiveLinkColor = $theme.BlueHover
+    $link.VisitedLinkColor = $theme.Blue
     $link.LinkBehavior = 'HoverUnderline'
     $link.Tag = $url
     $link.add_LinkClicked({ if ($this.Tag) { Start-Process -FilePath $this.Tag } })
@@ -176,15 +444,26 @@ function Add-Link($parent,[string]$value,[string]$url,[int]$x,[int]$y,[int]$widt
 function Set-ButtonStyle($button, [bool]$primary = $false) {
     $button.FlatStyle = 'Flat'
     $button.UseVisualStyleBackColor = $false
-    $button.BackColor = if ($primary) { $theme.Blue } else { $theme.White }
-    $button.ForeColor = if ($primary) { $theme.White } else { $theme.Blue }
-    $button.FlatAppearance.BorderColor = if ($primary) { $theme.Blue } else { $theme.Line }
-    $button.FlatAppearance.MouseOverBackColor = if ($primary) { $theme.BlueHover } else { $theme.PaleBlue }
+    $button.BackColor = if ($primary) { $theme.Primary } else { $theme.Surface }
+    $button.ForeColor = if ($primary) { $theme.OnPrimary } else { $theme.Blue }
+    $button.FlatAppearance.BorderColor = if ($primary) { $theme.Primary } else { $theme.Line }
+    $button.FlatAppearance.MouseOverBackColor = if ($primary) { $theme.PrimaryHover } else { $theme.PaleBlue }
     $button.FlatAppearance.MouseDownBackColor = $button.FlatAppearance.MouseOverBackColor
     $button.Cursor = [Windows.Forms.Cursors]::Hand
-    $path = New-RoundedPath $button.Width $button.Height 8
+    Update-ButtonRegion $button
+    $button.add_SizeChanged({ Update-ButtonRegion $this })
+}
+
+function Update-ButtonRegion($button) {
+    $radius = [Math]::Min($form.DisplayPixels(8), [Math]::Min($button.Width,$button.Height) / 2)
+    if ($radius -lt 1) { return }
+    $old = $button.Region
+    $path = New-RoundedPath $button.Width $button.Height $radius
     try { $button.Region = New-Object Drawing.Region($path) }
-    finally { $path.Dispose() }
+    finally {
+        $path.Dispose()
+        if ($old) { $old.Dispose() }
+    }
 }
 
 function Add-Action($page, [string]$caption, [int]$x, [int]$y, [int]$width, [scriptblock]$action, [bool]$primary = $false) {
@@ -197,7 +476,7 @@ function Add-Action($page, [string]$caption, [int]$x, [int]$y, [int]$width, [scr
 }
 
 $header = New-Object Windows.Forms.Panel
-$header.BackColor = $theme.White
+$header.BackColor = $theme.Surface
 $header.Dock = 'Top'
 $header.Height = 62
 $form.Controls.Add($header)
@@ -205,14 +484,15 @@ if (Test-Path -LiteralPath $iconPath) {
     $brand = New-Object Windows.Forms.PictureBox
     $brand.Bounds = New-Object Drawing.Rectangle(30,10,42,42)
     $brand.SizeMode = 'Zoom'
-    $brandIcon = [Drawing.Icon]::new($iconPath,48,48)
+    $brandIcon = [Drawing.Icon]::new($iconPath,128,128)
     try { $brand.Image = $brandIcon.ToBitmap() }
     finally { $brandIcon.Dispose() }
     $header.Controls.Add($brand)
 }
 $appName = Add-Heading $header 'Open Proxy Setup' 80 17 275 32 15
 $siteLink = Add-Link $header '项目网站 ↗' 'https://openproxysetup.ccwu.cc/' 540 22 86
-$docsLink = Add-Link $header '使用文档 ↗' 'https://github.com/lomgzhijie/OpenProxySetup#readme' 644 22 86
+$docsLink = Add-Link $header '使用文档' '' 644 22 86
+$docsLink.add_LinkClicked({ Open-Readme })
 foreach ($headerLink in @($siteLink,$docsLink)) { $headerLink.Anchor = 'Top,Right' }
 $windowTips = New-Object Windows.Forms.ToolTip
 function Add-WindowButton([string]$glyph, [string]$name, [int]$x, [scriptblock]$action) {
@@ -230,10 +510,18 @@ function Add-WindowButton([string]$glyph, [string]$name, [int]$x, [scriptblock]$
     $header.Controls.Add($button)
     return $button
 }
+$dayButton = Add-WindowButton '☀' '日间模式' 437 { Set-Appearance 'light' -Save }
+$nightButton = Add-WindowButton '☾' '暗夜模式' 481 { Set-Appearance 'dark' -Save }
+foreach ($button in @($dayButton,$nightButton)) {
+    $button.Font = New-Object Drawing.Font('Segoe UI Symbol',14)
+    $button.Width = 39
+}
+$dayButton.Tag = 'light'
+$nightButton.Tag = 'dark'
 [void](Add-WindowButton '−' '最小化' 752 { $form.WindowState = 'Minimized' })
 $maximizeWindow = Add-WindowButton '□' '最大化' 794 { $form.ToggleMaximized() }
 $closeWindow = Add-WindowButton '×' '关闭' 836 { $form.Close() }
-$closeWindow.FlatAppearance.MouseOverBackColor = [Drawing.ColorTranslator]::FromHtml('#FDE9EB')
+$closeWindow.FlatAppearance.MouseOverBackColor = $theme.CloseHover
 $closeWindow.FlatAppearance.MouseDownBackColor = $closeWindow.FlatAppearance.MouseOverBackColor
 foreach ($dragArea in @($header,$appName,$brand)) {
     if ($dragArea) {
@@ -253,14 +541,14 @@ $form.add_SizeChanged({
 $navigation = New-Object Windows.Forms.Panel
 $navigation.Dock = 'Top'
 $navigation.Height = 53
-$navigation.BackColor = $theme.White
+$navigation.BackColor = $theme.Surface
 $form.Controls.Add($navigation)
 $navigation.BringToFront()
 
 $footer = New-Object Windows.Forms.Panel
 $footer.Dock = 'Bottom'
 $footer.Height = 62
-$footer.BackColor = $theme.White
+$footer.BackColor = $theme.Surface
 $form.Controls.Add($footer)
 $footer.BringToFront()
 foreach ($bar in @($navigation,$footer)) {
@@ -287,11 +575,18 @@ $script:currentPage = $null
 function New-WizardPage {
     $page = New-Object Windows.Forms.Panel
     $page.BackColor = $theme.Background
+    $page.Size = New-Object Drawing.Size(854,493)
     $page.AutoScroll = $true
     return $page
 }
 
 function Add-WizardPage($page, [string]$caption, [int]$width) {
+    if ($width -le 0) {
+        $script:pages.Add($page)
+        $page.Visible = $false
+        $viewport.Controls.Add($page)
+        return
+    }
     $x = if ($script:pages.Count -eq 0) { 29 } else { $last = $navigation.Controls[$navigation.Controls.Count-1]; $last.Right + 4 }
     $button = New-Object Windows.Forms.Button
     $button.Text = $caption
@@ -309,16 +604,38 @@ function Add-WizardPage($page, [string]$caption, [int]$width) {
 
 function Fit-WizardPage($page) {
     if ($page) {
-        $width = [Math]::Min(854, $viewport.ClientSize.Width)
+        $available = $viewport.ClientSize.Width
+        $preferred = [Math]::Max($form.DisplayPixels(854), $available - $form.DisplayPixels(46))
+        $width = [Math]::Min($available, [Math]::Min($form.DisplayPixels(1180), $preferred))
         $page.SetBounds([int](($viewport.ClientSize.Width-$width)/2),0,$width,$viewport.ClientSize.Height)
+        $content = $page.Tag
+        if ($content) {
+            if ($content.Expandable) {
+                $content.Panel.Height = [Math]::Max($form.DisplayPixels($content.Height),
+                    [Math]::Min($form.DisplayPixels(630), $page.ClientSize.Height-$form.DisplayPixels(48)))
+            }
+            $room = $page.ClientSize.Height - $content.Panel.Height - $form.DisplayPixels(24)
+            $shift = [Math]::Min($form.DisplayPixels(115), [Math]::Max(0, [int]($room/2)))
+            $content.Panel.Top = $form.DisplayPixels($content.Top) + $shift
+        }
+        if ($page -eq $homePage -and $workflow) {
+            $extra = [Math]::Max(0, $homeBody.Width - $form.DisplayPixels(854))
+            $workflow.Width = $form.DisplayPixels(346) + [Math]::Min($form.DisplayPixels(100), [int]($extra/4))
+            $workflow.Left = $homeBody.Width - $workflow.Width - $form.DisplayPixels(39)
+        }
     }
 }
+$form.add_Shown({ Fit-WizardPage $script:currentPage })
 $viewport.add_Resize({ Fit-WizardPage $script:currentPage })
 
 function Update-PageActions {
     if (-not $script:currentPage) { return }
     $index = $script:pages.IndexOf($script:currentPage)
-    $previous.Enabled = $index -gt 0 -and $index -le $script:guidesEnd
+    $reading = $script:currentPage -eq $readmePage
+    $previous.Text = if ($reading) { '返回' } else { '上一步' }
+    $previous.Enabled = $reading -or ($index -gt 0 -and $index -le $script:guidesEnd)
+    $previous.Left = if ($reading) { $next.Left } else { $next.Left - $form.DisplayPixels(150) }
+    $next.Visible = -not $reading
     $next.Enabled = $index -lt ($script:guidesEnd) -and ($script:currentPage -ne $authPage -or $script:cloudflareVerified)
 }
 
@@ -326,12 +643,18 @@ function Show-WizardPage($page) {
     if (-not $page -or $page -eq $script:currentPage) { return }
     if ($script:currentPage) {
         $script:currentPage.Visible = $false
-        $navigationButtons[$script:currentPage].BackColor = $theme.White
-        $navigationButtons[$script:currentPage].ForeColor = $theme.Muted
+        $oldButton = $navigationButtons[$script:currentPage]
+        if ($oldButton) {
+            $oldButton.BackColor = $theme.Surface
+            $oldButton.ForeColor = $theme.Muted
+        }
     }
     $script:currentPage = $page
-    $navigationButtons[$page].BackColor = $theme.PaleBlue
-    $navigationButtons[$page].ForeColor = $theme.Blue
+    $selectedButton = $navigationButtons[$page]
+    if ($selectedButton) {
+        $selectedButton.BackColor = $theme.PaleBlue
+        $selectedButton.ForeColor = $theme.Blue
+    }
     Fit-WizardPage $page
     $page.Visible = $true
     $page.BringToFront()
@@ -340,14 +663,21 @@ function Show-WizardPage($page) {
 
 $homePage = New-WizardPage
 Add-WizardPage $homePage '首页' 68
-$title = Add-Heading $homePage ("部署自己的" + [Environment]::NewLine + "Cloudflare Pages 站点") 37 60 434 114 25
-$summary = Add-Text $homePage '从浏览器授权、域名配置到打开站点后台，在一个 Windows 图形向导里完成。' 39 185 370 58
+$homeBody = New-Object Windows.Forms.Panel
+$homeBody.Bounds = New-Object Drawing.Rectangle(0,0,854,428)
+$homeBody.Anchor = 'Top,Left,Right'
+$homePage.Controls.Add($homeBody)
+$homePage.Tag = @{ Panel=$homeBody; Height=428; Top=0 }
+$title = Add-Heading $homeBody ("部署自己的" + [Environment]::NewLine + "Cloudflare Pages 站点") 37 60 434 114 25
+$summary = Add-Text $homeBody '从浏览器授权、域名配置到打开站点后台，在一个 Windows 图形向导里完成。' 39 185 370 58
 $summary.ForeColor = $theme.Muted
-Add-Action $homePage '开始部署  →' 39 263 156 { Show-WizardPage $script:pages[1] } $true
-Add-Action $homePage '管理已有站点' 209 263 152 { Show-WizardPage $managePage }
+Add-Action $homeBody '开始部署  →' 39 263 156 { Show-WizardPage $script:pages[1] } $true
+Add-Action $homeBody '管理已有站点' 209 263 152 { Show-WizardPage $managePage }
 
-$workflow = Add-Card $homePage 469 39 346 292 $theme.PaleBlue 22
-$workflowCard = Add-Card $workflow 18 18 310 256 $theme.White
+$workflow = Add-Card $homeBody 469 39 346 292 $theme.PaleBlue 22
+$workflow.Anchor = 'Top,Right'
+$workflowCard = Add-Card $workflow 18 18 310 256 $theme.Surface
+$workflowCard.Anchor = 'Top,Left,Right'
 [void](Add-Heading $workflowCard '部署流程' 19 15 270 34 13)
 $flow = @(
     @{Title='准备域名'; Detail='DNSHE 域名和 API 授权'},
@@ -364,16 +694,20 @@ for ($i = 0; $i -lt $flow.Count; $i++) {
     $detail = Add-Text $workflowCard $flow[$i].Detail 65 ($y+27) 223 24
     $detail.ForeColor = $theme.Muted
 }
-$notice = Add-Card $homePage 34 345 781 75 $theme.White
+$notice = Add-Card $homeBody 34 345 781 75 $theme.Surface
+$notice.Anchor = 'Top,Left,Right'
 [void](Add-Heading $notice '开始前' 20 9 700 29 13)
 $legal = Add-Text $notice '请准备可访问 Cloudflare 的 VPN 环境。使用 VPN 或代理服务时，请遵守所在地适用的法律法规。' 20 38 733 30
 $legal.ForeColor = $theme.Muted
+$legal.Anchor = 'Top,Left,Right'
 
 $guideCards = @{}
 function Add-GuidePage([string]$title,[string]$body,[string]$linkText,[string]$url,[string]$caption,[int]$width,[bool]$withActions = $false) {
     $page = New-WizardPage
     Add-WizardPage $page $caption $width
-    $card = Add-Card $page 29 17 796 478 $theme.White
+    $card = Add-Card $page 29 17 796 478 $theme.Surface
+    $card.Anchor = 'Top,Left,Right'
+    $page.Tag = @{ Panel=$card; Height=478; Top=17; Expandable=$true }
     $guideCards[$page] = $card
     [void](Add-Heading $card $title 26 20 730 41)
     $guide = New-Object Windows.Forms.TextBox
@@ -383,12 +717,14 @@ function Add-GuidePage([string]$title,[string]$body,[string]$linkText,[string]$u
     $guide.BorderStyle = 'None'
     $guideTop = if ($withActions) { 124 } else { 80 }
     $guide.Bounds = New-Object Drawing.Rectangle(28,$guideTop,736,(403-$guideTop))
-    $guide.BackColor = $theme.White
+    $guide.Anchor = 'Top,Bottom,Left,Right'
+    $guide.BackColor = $theme.Surface
     $guide.ForeColor = $theme.Muted
     $guide.Font = New-Object Drawing.Font($form.Font.FontFamily,11)
     $guide.Text = $body.Trim()
     $card.Controls.Add($guide)
-    [void](Add-Link $card $linkText $url 27 428 730)
+    $guideLink = Add-Link $card $linkText $url 27 428 730
+    $guideLink.Anchor = 'Bottom,Left,Right'
 }
 
 
@@ -560,7 +896,9 @@ $form.add_FormClosed({
 $deployPage = New-WizardPage
 Add-WizardPage $deployPage '4  填写并部署' 122
 $script:guidesEnd = $script:pages.IndexOf($deployPage)
-$deployCard = Add-Card $deployPage 29 17 796 450 $theme.White
+$deployCard = Add-Card $deployPage 29 17 796 450 $theme.Surface
+$deployCard.Anchor = 'Top,Left,Right'
+$deployPage.Tag = @{ Panel=$deployCard; Height=450; Top=17 }
 [void](Add-Heading $deployCard '填写部署信息' 26 20 725 42)
 [void](Add-Text $deployCard '完整域名' 30 79 145 30)
 $domain = New-Object Windows.Forms.TextBox
@@ -588,11 +926,15 @@ $deployCard.Controls.Add($password)
 foreach ($field in @($domain,$apiKey,$apiSecret,$password)) {
     $field.ShortcutsEnabled = $true
     $field.BorderStyle = 'FixedSingle'
+    $field.BackColor = $theme.Surface
+    $field.ForeColor = $theme.Ink
     $field.Width = 390
+    $field.Anchor = 'Top,Left,Right'
     $pasteButton = New-Object Windows.Forms.Button
     $pasteButton.Text = '粘贴'
     $pasteButton.Location = New-Object Drawing.Point(590,$field.Top)
     $pasteButton.Size = New-Object Drawing.Size(75,30)
+    $pasteButton.Anchor = 'Top,Right'
     Set-ButtonStyle $pasteButton
     $targetField = $field
     $pasteButton.add_Click({
@@ -610,6 +952,7 @@ foreach ($field in @($apiSecret,$password)) {
     $toggleButton.Text = '显示'
     $toggleButton.Location = New-Object Drawing.Point(675,$field.Top)
     $toggleButton.Size = New-Object Drawing.Size(85,30)
+    $toggleButton.Anchor = 'Top,Right'
     Set-ButtonStyle $toggleButton
     $targetField = $field
     $targetButton = $toggleButton
@@ -628,24 +971,33 @@ $deployButton.Size = New-Object Drawing.Size(260,42)
 Set-ButtonStyle $deployButton $true
 $deployCard.Controls.Add($deployButton)
 $deployHint = Add-Text $deployCard '' 30 380 750 55
+$deployHint.Anchor = 'Top,Left,Right'
 
 $managePage = New-WizardPage
 Add-WizardPage $managePage '后台管理' 97
-$manageCard = Add-Card $managePage 29 17 796 423 $theme.White
+$manageCard = Add-Card $managePage 29 17 796 423 $theme.Surface
+$manageCard.Anchor = 'Top,Left,Right'
+$managePage.Tag = @{ Panel=$manageCard; Height=423; Top=17 }
 [void](Add-Heading $manageCard '站点后台' 26 20 730 42)
 [void](Add-Text $manageCard '站点网址' 30 90 110 30)
 $manageUrl = New-Object Windows.Forms.TextBox
 $manageUrl.Location = New-Object Drawing.Point(150,90)
 $manageUrl.Size = New-Object Drawing.Size(585,30)
+$manageUrl.Anchor = 'Top,Left,Right'
 $manageUrl.BorderStyle = 'FixedSingle'
+$manageUrl.BackColor = $theme.Surface
+$manageUrl.ForeColor = $theme.Ink
 $manageCard.Controls.Add($manageUrl)
 [void](Add-Text $manageCard '输入 HTTPS 网址或域名，例如 example.pages.dev。' 150 128 585 32)
 [void](Add-Text $manageCard '后台密码' 30 175 110 30)
 $managePassword = New-Object Windows.Forms.TextBox
 $managePassword.Location = New-Object Drawing.Point(150,175)
 $managePassword.Size = New-Object Drawing.Size(585,30)
+$managePassword.Anchor = 'Top,Left,Right'
 $managePassword.UseSystemPasswordChar = $true
 $managePassword.BorderStyle = 'FixedSingle'
+$managePassword.BackColor = $theme.Surface
+$managePassword.ForeColor = $theme.Ink
 $manageCard.Controls.Add($managePassword)
 [void](Add-Text $manageCard '密码仅保留在本次打开的窗口内。打开后台后，在浏览器中登录。' 150 215 585 46)
 $manageStatus = Add-Text $manageCard '' 150 338 585 100
@@ -681,12 +1033,18 @@ Add-Action $manageCard '清空密码' 470 275 145 {
 }
 
 $progressPage = New-WizardPage
-$progressCard = Add-Card $progressPage 29 17 796 476 $theme.White
+Add-WizardPage $progressPage '部署进度' 97
+$navigationButtons[$progressPage].Visible = $false
+$progressCard = Add-Card $progressPage 29 17 796 476 $theme.Surface
+$progressCard.Anchor = 'Top,Left,Right'
+$progressPage.Tag = @{ Panel=$progressCard; Height=476; Top=17 }
 [void](Add-Heading $progressCard '部署进度' 26 18 730 40)
 $stageNames = @('', '验证 Cloudflare 授权', '创建 Cloudflare KV', '发布 Cloudflare Pages', '绑定域名（Cloudflare / DNSHE）')
 $stageRows = @(foreach ($i in 1..4) {
     $row = Add-Card $progressCard 26 (64 + ($i - 1) * 34) 742 30 $theme.PaleBlue 7
+    $row.Anchor = 'Top,Left,Right'
     $stageLabel = Add-Text $row '' 10 0 723 30
+    $stageLabel.Anchor = 'Top,Left,Right'
     $stageLabel.TextAlign = 'MiddleLeft'
     $stageLabel
 })
@@ -694,6 +1052,7 @@ $progress = Add-Text $progressCard '' 26 205 736 40
 $progressDetail = New-Object Windows.Forms.TextBox
 $progressDetail.Location = New-Object Drawing.Point(30,245)
 $progressDetail.Size = New-Object Drawing.Size(735,82)
+$progressDetail.Anchor = 'Top,Left,Right'
 $progressDetail.Multiline = $true
 $progressDetail.ReadOnly = $true
 $progressDetail.ScrollBars = 'Vertical'
@@ -721,13 +1080,122 @@ $editDeployment.add_Click({ Show-WizardPage $deployPage })
 $progressCard.Controls.Add($editDeployment)
 Add-Action $progressCard '进入后台管理' 406 420 175 { Show-WizardPage $managePage }
 
+$readmePage = New-WizardPage
+Add-WizardPage $readmePage '' 0
+$readmeCard = Add-Card $readmePage 29 17 796 478 $theme.Surface
+$readmeCard.Anchor = 'Top,Left,Right'
+$readmePage.Tag = @{ Panel=$readmeCard; Height=478; Top=17; Expandable=$true }
+[void](Add-Heading $readmeCard '使用文档' 26 18 270 40)
+$readmeFiles = @('README.md','README.en.md','README.ja.md','README.ko.md')
+$readmeLanguage = New-Object Windows.Forms.ComboBox
+$readmeLanguage.DropDownStyle = 'DropDownList'
+$readmeLanguage.Bounds = New-Object Drawing.Rectangle(612,23,156,30)
+$readmeLanguage.Anchor = 'Top,Right'
+$readmeLanguage.BackColor = $theme.Surface
+$readmeLanguage.ForeColor = $theme.Ink
+$readmeLanguage.AccessibleName = '文档语言'
+$readmeLanguage.Items.AddRange([object[]]@('简体中文','English','日本語','한국어'))
+$readmeLanguage.SelectedIndex = 0
+$readmeCard.Controls.Add($readmeLanguage)
+$readmeToc = New-Object Windows.Forms.ListBox
+$readmeToc.Bounds = New-Object Drawing.Rectangle(26,73,180,376)
+$readmeToc.Anchor = 'Top,Bottom,Left'
+$readmeToc.IntegralHeight = $false
+$readmeToc.HorizontalScrollbar = $true
+$readmeToc.BorderStyle = 'FixedSingle'
+$readmeToc.AccessibleName = '本页目录'
+$readmeToc.BackColor = $theme.Surface
+$readmeToc.ForeColor = $theme.Ink
+$readmeCard.Controls.Add($readmeToc)
+$readmeBox = New-Object Windows.Forms.RichTextBox
+$readmeBox.Bounds = New-Object Drawing.Rectangle(228,70,540,380)
+$readmeBox.Anchor = 'Top,Bottom,Left,Right'
+$readmeBox.BorderStyle = 'None'
+$readmeBox.BackColor = $theme.Surface
+$readmeBox.ForeColor = $theme.Ink
+$readmeBox.ReadOnly = $true
+$readmeBox.DetectUrls = $false
+$readmeBox.ScrollBars = 'Vertical'
+$readmeBox.AccessibleName = '文档正文'
+$readmeCard.Controls.Add($readmeBox)
+
+function Show-Readme([switch]$KeepPosition) {
+    $position = if ($KeepPosition) { $readmeBox.GetCharIndexFromPosition([Drawing.Point]::new(1,1)) } else { 0 }
+    $readmeToc.Items.Clear()
+    try {
+        $path = Join-Path $PSScriptRoot $readmeFiles[$readmeLanguage.SelectedIndex]
+        $script:readmeData = ConvertTo-ReadmeDocument ([IO.File]::ReadAllLines($path,[Text.Encoding]::UTF8)) $theme.Ink $theme.Blue
+        $readmeBox.Rtf = $script:readmeData.Rtf
+        # Mark only Markdown link spans. Rich Edit drops imported RTF hyperlink fields.
+        $spans = [regex]::Matches($readmeBox.Text, '\uE000([^\uE001]+)\uE001')
+        $readmeBox.ReadOnly = $false
+        try {
+            for ($i=$spans.Count-1; $i -ge 0; $i--) {
+                $span = $spans[$i]
+                $readmeBox.Select($span.Index + $span.Length - 1,1)
+                $readmeBox.SelectedText = ''
+                $readmeBox.Select($span.Index,1)
+                $readmeBox.SelectedText = ''
+                $readmeBox.Select($span.Index,$span.Length - 2)
+                [OpenProxySetupWindow]::MarkDocumentLink($readmeBox.Handle)
+            }
+        } finally { $readmeBox.ReadOnly = $true }
+        $readmeToc.Items.AddRange([object[]]$script:readmeData.Headings)
+        $readmeBox.Select([Math]::Min($position,$readmeBox.TextLength),0)
+        $readmeBox.ScrollToCaret()
+    } catch {
+        $script:readmeData = $null
+        $readmeBox.Text = '无法读取随包文档，请完整解压下载包后重试。'
+    }
+}
+
+function Open-Readme {
+    if ($script:currentPage -eq $readmePage) { return }
+    $script:readmeReturnPage = $script:currentPage
+    Show-WizardPage $readmePage
+    if (-not $script:readmeData) { Show-Readme }
+    [void]$readmeLanguage.Focus()
+}
+
+$readmeLanguage.add_SelectedIndexChanged({ Show-Readme })
+$readmeToc.add_SelectedIndexChanged({
+    if ($this.SelectedIndex -lt 0) { return }
+    $heading = [regex]::Match($readmeBox.Text, '(?m)^' + [regex]::Escape([string]$this.SelectedItem) + '$')
+    if ($heading.Success) {
+        $readmeBox.Select($heading.Index,0)
+        $readmeBox.ScrollToCaret()
+    }
+})
+$readmeBox.add_LinkClicked({
+    param($sender,$event)
+    $target = $event.LinkText
+    if ($script:readmeData -and $script:readmeData.Links.ContainsKey($target)) {
+        $target = $script:readmeData.Links[$target]
+    }
+    $uri = $null
+    if ([uri]::TryCreate($target,[UriKind]::Absolute,[ref]$uri) -and $uri.Scheme -in @('https','http')) {
+        Start-Process -FilePath $uri.AbsoluteUri
+    }
+})
+$form.KeyPreview = $true
+$form.add_KeyDown({
+    param($sender,$event)
+    if ($event.KeyCode -eq 'Escape' -and $script:currentPage -eq $readmePage -and -not $readmeLanguage.DroppedDown) {
+        Show-WizardPage $script:readmeReturnPage
+        $event.SuppressKeyPress = $true
+    }
+})
+
 $previous = New-Object Windows.Forms.Button
 $previous.Text = '上一步'
 $previous.Location = New-Object Drawing.Point(571,11)
 $previous.Size = New-Object Drawing.Size(132,40)
 Set-ButtonStyle $previous
 $previous.Anchor = 'Top,Right'
-$previous.add_Click({ Show-WizardPage $script:pages[($script:pages.IndexOf($script:currentPage) - 1)] })
+$previous.add_Click({
+    if ($script:currentPage -eq $readmePage) { Show-WizardPage $script:readmeReturnPage }
+    else { Show-WizardPage $script:pages[($script:pages.IndexOf($script:currentPage) - 1)] }
+})
 $footer.Controls.Add($previous)
 $next = New-Object Windows.Forms.Button
 $next.Text = '下一步'
@@ -910,7 +1378,7 @@ function Start-Deployment {
     $deployHint.Text = '部署进行中。请查看「部署进度」。'
     $progress.Text = '正在准备部署…'
     $progressDetail.Text = "目标域名：$($state.Domain)　项目：$($state.ProjectName)"
-    if (-not $script:pages.Contains($progressPage)) { Add-WizardPage $progressPage '部署进度' 97 }
+    $navigationButtons[$progressPage].Visible = $true
     Show-WizardPage $progressPage
     Show-DeploymentProgress
     try {
@@ -936,4 +1404,7 @@ function Start-Deployment {
 $deployButton.add_Click({ Start-Deployment })
 $retry.add_Click({ Start-Deployment })
 Show-WizardPage $homePage
+Set-Appearance (Read-Appearance)
+Set-DisplayLayout
+Set-TaskbarIdentity
 [void]$form.ShowDialog()
