@@ -2,7 +2,7 @@ const translations = {
   en: {
     navDownload: "Download", docs: "Docs", headline: "Deploy your own\nCloudflare Pages site",
     summary: "Authorize your account, connect a domain, and open your site dashboard from one Windows setup wizard.",
-    heroDownload: "Download ↓", step1: "Prepare your domain", step2: "Authorize Cloudflare", step3: "Deploy your site",
+    heroDownload: "Download ↓", step1: "Authorize Cloudflare", step2: "Prepare your domain", step3: "Deploy your site",
     downloads: "Download OpenProxySetup", setup: "Windows installer", setupDesc: "Choose an installation folder, then open the deployment wizard.", setupLink: "Download installer ↓",
     portable: "Portable edition", portableDesc: "Extract the full archive and run OpenProxySetup.exe.", portableLink: "Download portable ZIP ↓",
     cmd: "Classic CMD edition", cmdDesc: "Extract the full archive and run OpenProxySetup.cmd.", cmdLink: "Download CMD edition ↓",
@@ -13,7 +13,7 @@ const translations = {
   ja: {
     navDownload: "ダウンロード", docs: "ドキュメント", headline: "自分の Cloudflare Pages\nサイトをデプロイ",
     summary: "ブラウザー認証、ドメイン設定、管理画面の起動まで、Windows のセットアップウィザードで進められます。",
-    heroDownload: "ダウンロード ↓", step1: "ドメインを準備", step2: "Cloudflare を認証", step3: "サイトをデプロイ",
+    heroDownload: "ダウンロード ↓", step1: "Cloudflare を認証", step2: "ドメインを準備", step3: "サイトをデプロイ",
     downloads: "OpenProxySetup のダウンロード", setup: "インストーラー版", setupDesc: "インストール先を選ぶと、デプロイウィザードが開きます。", setupLink: "インストーラーを入手 ↓",
     portable: "ポータブル版", portableDesc: "すべて展開して「OpenProxySetup.exe」を実行します。", portableLink: "ポータブル ZIP を入手 ↓",
     cmd: "クラシック CMD 版", cmdDesc: "すべて展開して「OpenProxySetup.cmd」を実行します。", cmdLink: "CMD 版を入手 ↓",
@@ -24,7 +24,7 @@ const translations = {
   ko: {
     navDownload: "다운로드", docs: "문서", headline: "나만의 Cloudflare Pages\n사이트 배포",
     summary: "브라우저 인증부터 도메인 설정과 사이트 관리 화면 열기까지 Windows 마법사에서 진행할 수 있습니다.",
-    heroDownload: "다운로드 ↓", step1: "도메인 준비", step2: "Cloudflare 인증", step3: "사이트 배포",
+    heroDownload: "다운로드 ↓", step1: "Cloudflare 인증", step2: "도메인 준비", step3: "사이트 배포",
     downloads: "OpenProxySetup 다운로드", setup: "설치 버전", setupDesc: "설치 위치를 선택하면 배포 마법사가 열립니다.", setupLink: "설치 프로그램 다운로드 ↓",
     portable: "포터블 버전", portableDesc: "압축을 모두 풀고 OpenProxySetup.exe를 실행합니다.", portableLink: "포터블 ZIP 다운로드 ↓",
     cmd: "클래식 CMD 버전", cmdDesc: "압축을 모두 풀고 OpenProxySetup.cmd를 실행합니다.", cmdLink: "CMD 버전 다운로드 ↓",
