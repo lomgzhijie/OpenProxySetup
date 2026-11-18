@@ -51,12 +51,19 @@
 <p>OpenProxySetup provides deployment wizards for Windows and Android. Authorize your own Cloudflare account and set an administrator password. It uses the bundled <a href="https://github.com/cmliu/edgetunnel">edgetunnel</a> source to create Cloudflare KV and Pages resources and displays a clickable site address. Open the site’s <code>/admin</code> page and enter the password to view nodes and subscription links in the upstream dashboard.</p>
 <p>The project provides a deployment wizard. Each user deploys to their own Cloudflare account. Shared nodes, accounts, and hosting are outside the scope of the project.</p>
 <h2 id="android-apk">Android APK</h2>
+<h3>Download and install</h3>
 <p>Requires <strong>Android 8.0 or later</strong>. Download the <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.0/OpenProxySetup-android-v0.3.4.apk">Android v0.3.4 APK</a> and open it on your phone to install or update the app.</p>
+<h3>First deployment</h3>
 <ol>
-<li>Follow the illustrated guide in the app to create a Cloudflare API token and copy your Account ID. Return to the app to verify access.</li>
-<li>Follow the wizard to register a DNSHE domain and obtain its API credentials. Enter the credentials and your administrator password, then start deployment.</li>
-<li>Once Pages is published, you can open the <code>pages.dev</code> dashboard. Allow about five minutes for custom domain validation. After a minute, tap <strong>重新验证</strong> (Recheck) to query the status if the domain is still pending.</li>
+<li><strong>Authorize Cloudflare.</strong> In step 1, open the API Token page. Start from scratch with an account policy and select the account you want to deploy to. Grant <code>Pages Write</code> and <code>Workers KV Storage Write</code>, then create and copy the token.</li>
+<li><strong>Enter your Account ID.</strong> Use the app’s Account ID link to open Workers &amp; Pages. Copy the 32-character Account ID from Account Details. Paste the ID and token into their separate fields, then verify access and continue.</li>
+<li><strong>Prepare a DNSHE domain.</strong> In step 2, open DNSHE and register a domain, or copy the full name of an existing domain, such as <code>myhome.ccwu.cc</code>.</li>
+<li><strong>Create DNSHE API credentials.</strong> On the DNSHE mobile site, expand Domain Management and find API Management in the navigation menu. Create an API key and copy both the API Key and API Secret.</li>
+<li><strong>Start deployment.</strong> In step 4, enter the full domain, API Key, and API Secret. Set an administrator password of at least 12 characters, then start deployment. To add a domain later, choose <strong>暂时只发布 Pages</strong> (Publish Pages only for now).</li>
+<li><strong>Open the site dashboard.</strong> After publication, you can sign in to the <code>pages.dev</code> dashboard using the password you just set. Allow about five minutes for custom domain validation. After one minute, you can tap <strong>重新验证</strong> (Recheck) to query the status. Once validation succeeds, open the dashboard at your custom domain.</li>
 </ol>
+<h3>Manage an existing site</h3>
+<p>On the home screen, choose <strong>管理已有站点</strong> (Manage an existing site). Enter the domain or HTTPS address to open <code>/admin</code> in your browser. You can also enter and copy your administrator password for sign-in.</p>
 <h2 id="install-and-use-on-windows">Install and use on Windows</h2>
 <p>The home screen shows a legal notice and offers direct access to the admin dashboard. After deployment, the app fills in the site address and administrator password. For an existing site, enter them manually. Sign in to the dashboard in your browser. The password remains in the current app window and can be copied or cleared.</p>
 <ol>
