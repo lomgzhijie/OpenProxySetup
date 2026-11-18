@@ -4,11 +4,19 @@
 
 [下载 Windows x64 版](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [Android APK](https://github.com/lomgzhijie/OpenProxySetup/releases/tag/android-v0.3.4) · [报告问题](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [参与贡献](CONTRIBUTING.md)
 
-一个供用户下载的 Windows 部署应用。用户用自己的 Cloudflare 账号登录，设置后台管理员密码，应用使用包内的 [edgetunnel](https://github.com/cmliu/edgetunnel) 源码创建 Cloudflare KV 和 Pages，并给出可点击的网站地址。用户访问网站的 `/admin`，输入刚设置的密码，即可在上游后台查看节点和订阅链接。
+OpenProxySetup 提供 Windows 和 Android 部署向导。用户授权自己的 Cloudflare 账号，并设置后台管理员密码，应用使用包内的 [edgetunnel](https://github.com/cmliu/edgetunnel) 源码创建 Cloudflare KV 和 Pages，并给出可点击的网站地址。用户访问网站的 `/admin`，输入刚设置的密码，即可在上游后台查看节点和订阅链接。
 
 本项目提供部署向导，不提供共享节点、账号或云服务。每位用户部署到自己的 Cloudflare 账号。
 
-## 下载与使用
+## Android 安装版
+
+支持 **Android 8.0 及以上**。下载 [Android v0.3.4 安装包](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.0/OpenProxySetup-android-v0.3.4.apk) 后，在手机上打开 APK 安装。已安装旧版可直接覆盖安装。
+
+1. 打开应用，按内置图解创建 Cloudflare API Token，复制 Account ID，回到应用验证授权。
+2. 按向导完成 DNSHE 域名注册和 API 授权，填写 DNSHE 凭据和后台管理员密码，再开始部署。
+3. Pages 发布后可先打开 `pages.dev` 后台。建议为自定义域名验证预留约 5 分钟。等满 1 分钟仍未成功，可点「重新验证」查询状态。
+
+## Windows 版下载与使用
 
 首页提示使用前准备可访问 Cloudflare 的 VPN 环境，并提供法律法规提示。你也可直接进入「后台管理」。部署成功后会预填网址和后台密码；已有站点可手动填写。打开后台后，在浏览器中登录。密码只保留在当前应用窗口内，可按需复制或清空。
 

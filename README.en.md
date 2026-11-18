@@ -4,11 +4,19 @@
 
 [Download Windows x64](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [Android APK](https://github.com/lomgzhijie/OpenProxySetup/releases/tag/android-v0.3.4) · [Report an issue](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [Contribute](CONTRIBUTING.md)
 
-This Windows deployment app signs in with your own Cloudflare account and lets you set an administrator password. It uses the bundled [edgetunnel](https://github.com/cmliu/edgetunnel) source to create Cloudflare KV and Pages resources and displays a clickable site address. Open the site’s `/admin` page and enter the password to view nodes and subscription links in the upstream dashboard.
+OpenProxySetup provides deployment wizards for Windows and Android. Authorize your own Cloudflare account and set an administrator password. It uses the bundled [edgetunnel](https://github.com/cmliu/edgetunnel) source to create Cloudflare KV and Pages resources and displays a clickable site address. Open the site’s `/admin` page and enter the password to view nodes and subscription links in the upstream dashboard.
 
 The project provides a deployment wizard. Each user deploys to their own Cloudflare account. Shared nodes, accounts, and hosting are outside the scope of the project.
 
-## Download and use
+## Android APK
+
+Requires **Android 8.0 or later**. Download the [Android v0.3.4 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.0/OpenProxySetup-android-v0.3.4.apk) and open it on your phone to install or update the app.
+
+1. Follow the illustrated guide in the app to create a Cloudflare API token and copy your Account ID. Return to the app to verify access.
+2. Follow the wizard to register a DNSHE domain and obtain its API credentials. Enter the credentials and your administrator password, then start deployment.
+3. Once Pages is published, you can open the `pages.dev` dashboard. Allow about five minutes for custom domain validation. After a minute, tap **重新验证** (Recheck) to query the status if the domain is still pending.
+
+## Install and use on Windows
 
 The home screen shows a legal notice and offers direct access to the admin dashboard. After deployment, the app fills in the site address and administrator password. For an existing site, enter them manually. Sign in to the dashboard in your browser. The password remains in the current app window and can be copied or cleared.
 

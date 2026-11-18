@@ -4,11 +4,19 @@
 
 [Windows x64 版をダウンロード](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [Android 版 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/tag/android-v0.3.4) · [問題を報告](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [貢献する](CONTRIBUTING.md)
 
-Windows 向けのデプロイアプリです。自分の Cloudflare アカウントでログインし、管理者パスワードを設定します。アプリは同梱の [edgetunnel](https://github.com/cmliu/edgetunnel) ソースを使って Cloudflare KV と Pages を作成し、サイトのリンクを表示します。サイトの `/admin` を開き、設定したパスワードでログインすると、上流プロジェクトの管理画面でノードやサブスクリプションリンクを確認できます。
+OpenProxySetup は Windows と Android 向けのデプロイウィザードです。自分の Cloudflare アカウントでログインし、管理者パスワードを設定します。アプリは同梱の [edgetunnel](https://github.com/cmliu/edgetunnel) ソースを使って Cloudflare KV と Pages を作成し、サイトのリンクを表示します。サイトの `/admin` を開き、設定したパスワードでログインすると、上流プロジェクトの管理画面でノードやサブスクリプションリンクを確認できます。
 
 本プロジェクトが提供するのはデプロイウィザードです。各ユーザーは自分の Cloudflare アカウントにデプロイします。共有ノード、アカウント、クラウドサービスの提供は対象外です。
 
-## ダウンロードと使い方
+## Android 版 APK
+
+**Android 8.0 以降**に対応しています。[Android v0.3.4 の APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.0/OpenProxySetup-android-v0.3.4.apk) をダウンロードし、スマートフォンで開いてインストールまたは更新します。
+
+1. アプリ内の図解に沿って Cloudflare API トークンを作成し、Account ID をコピーします。アプリに戻り、認証を確認します。
+2. ウィザードに沿って DNSHE ドメインを登録し、API 認証情報を取得します。認証情報と管理者パスワードを入力して、デプロイを開始します。
+3. Pages の公開後は `pages.dev` の管理画面を利用できます。カスタムドメインの検証には約 5 分を見込んでください。1 分経っても検証が終わらなければ、「重新验证」ボタンで状態を確認できます。
+
+## Windows 版のダウンロードと使い方
 
 ホーム画面には法令に関する注意事項があり、「后台管理」（管理画面）に直接進むこともできます。デプロイ後はサイトのアドレスと管理者パスワードが自動入力されます。既存のサイトの場合は手動で入力し、ブラウザーで管理画面にログインします。パスワードは現在のアプリのウィンドウ内に保持され、コピーや消去ができます。
 

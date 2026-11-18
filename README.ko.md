@@ -4,11 +4,19 @@
 
 [Windows x64 다운로드](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [Android APK](https://github.com/lomgzhijie/OpenProxySetup/releases/tag/android-v0.3.4) · [문제 신고](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [기여하기](CONTRIBUTING.md)
 
-Windows용 배포 앱입니다. 본인의 Cloudflare 계정으로 로그인하고 관리자 비밀번호를 설정합니다. 앱은 함께 제공되는 [edgetunnel](https://github.com/cmliu/edgetunnel) 소스로 Cloudflare KV와 Pages를 만들고 클릭할 수 있는 사이트 주소를 표시합니다. 사이트의 `/admin`에 접속해 설정한 비밀번호로 로그인하면 업스트림 관리 화면에서 노드와 구독 링크를 확인할 수 있습니다.
+OpenProxySetup은 Windows와 Android용 배포 마법사를 제공합니다. 본인의 Cloudflare 계정으로 로그인하고 관리자 비밀번호를 설정합니다. 앱은 함께 제공되는 [edgetunnel](https://github.com/cmliu/edgetunnel) 소스로 Cloudflare KV와 Pages를 만들고 클릭할 수 있는 사이트 주소를 표시합니다. 사이트의 `/admin`에 접속해 설정한 비밀번호로 로그인하면 업스트림 관리 화면에서 노드와 구독 링크를 확인할 수 있습니다.
 
 이 프로젝트는 배포 마법사를 제공합니다. 각 사용자는 본인의 Cloudflare 계정에 배포합니다. 공유 노드, 계정, 클라우드 서비스 제공은 프로젝트 범위에 포함되지 않습니다.
 
-## 다운로드 및 사용
+## Android APK
+
+**Android 8.0 이상**을 지원합니다. [Android v0.3.4 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.0/OpenProxySetup-android-v0.3.4.apk)를 내려받아 휴대전화에서 열면 앱을 설치하거나 업데이트할 수 있습니다.
+
+1. 앱 내 그림 안내에 따라 Cloudflare API 토큰을 만들고 Account ID를 복사하세요. 앱으로 돌아와 인증을 확인합니다.
+2. 마법사를 따라 DNSHE 도메인을 등록하고 API 인증 정보를 받습니다. 인증 정보와 관리자 비밀번호를 입력한 뒤 배포를 시작하세요.
+3. Pages 게시가 완료되면 `pages.dev` 관리 화면을 먼저 열 수 있습니다. 사용자 지정 도메인 검증에는 약 5분을 예상하세요. 1분이 지나도 검증 중이면 「重新验证」 버튼을 눌러 상태를 확인할 수 있습니다.
+
+## Windows 버전 다운로드 및 사용
 
 홈 화면에 법률 관련 안내가 표시되며 「后台管理」(관리 화면)로 바로 이동할 수도 있습니다. 배포에 성공하면 사이트 주소와 관리자 비밀번호가 자동 입력됩니다. 기존 사이트는 직접 입력한 뒤 브라우저에서 관리 화면에 로그인합니다. 비밀번호는 현재 앱 창에만 남으며 필요할 때 복사하거나 지울 수 있습니다.
 
