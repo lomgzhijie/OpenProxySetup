@@ -64,7 +64,7 @@ function Resolve-CloudflareAccount {
     } else {
         try { $token = (Read-WranglerJson @('auth','token','--json')).token }
         catch { $token = $null }
-        if (-not $token) { throw 'Cloudflare 尚未授权。请回到第 3 步完成浏览器授权，再继续部署。' }
+        if (-not $token) { throw 'Cloudflare 尚未授权。请回到第 1 步完成浏览器授权，再继续部署。' }
     }
 
     $headers = @{Authorization = "Bearer $token"}

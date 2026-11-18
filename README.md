@@ -13,7 +13,7 @@
 首页提示使用前准备可访问 Cloudflare 的 VPN 环境，并提供法律法规提示。你也可直接进入「后台管理」。部署成功后会预填网址和后台密码；已有站点可手动填写。打开后台后，在浏览器中登录。密码只保留在当前应用窗口内，可按需复制或清空。
 
 1. 下载 [Windows x64 安装程序](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.0/OpenProxySetup-windows-x64-setup.exe)，双击运行并选择安装位置。安装程序会创建「自建机场」文件夹并打开部署向导。之后可从该目录双击 OpenProxySetup.exe。
-2. 按应用中的链接注册或登录 [Cloudflare](https://dash.cloudflare.com/sign-up) 和 [DNSHE](https://my.dnshe.com/)。在 DNSHE 取得域名，并在“域名管理 → API 管理”创建 API Key 和 API Secret。到应用第 3 步点击“开始 Cloudflare 授权”，在浏览器完成授权，再点“我已完成授权，继续”。应用会先验证授权，再进入部署页；账号密码只在 Cloudflare 网站输入。
+2. 先在应用第 1 步点击「开始 Cloudflare 授权」，在浏览器注册或登录 [Cloudflare](https://dash.cloudflare.com/sign-up) 并完成授权，再回到向导点击「我已完成授权，继续」。授权验证后，在第 2 步从 [DNSHE](https://my.dnshe.com/) 获取域名，在第 3 步通过「域名管理 → API 管理」创建 API Key 和 API Secret。Cloudflare 账号密码只在 Cloudflare 网站输入。
 3. 在应用中填写 DNSHE 域名、API Key / Secret，并设置至少 12 位的后台管理员密码，然后点击部署。应用负责创建 KV、Pages、密钥并部署，然后向 Pages 提交自定义域名绑定，通过 DNSHE API 为该域名添加指向 `pages.dev` 的 CNAME。已有的冲突 DNS 记录不会被覆盖。
 4. 部署成功后点击应用显示的后台网址，输入刚才设置的密码。在后台复制需要的节点或订阅链接，导入兼容客户端。实际可用格式由部署时的上游版本决定。自定义域名生效前，先使用应用显示的 `pages.dev` 地址。
 
@@ -41,7 +41,7 @@ try {
 }
 ```
 
-在第 3 步直接点击「我已完成授权，继续」。点击部署后，应用会先检查该 Token 能否读取指定账号的 Pages 项目，再创建云端资源。
+在第 1 步直接点击「我已完成授权，继续」。点击部署后，应用会先检查该 Token 能否读取指定账号的 Pages 项目，再创建云端资源。
 
 ### 系统要求
 

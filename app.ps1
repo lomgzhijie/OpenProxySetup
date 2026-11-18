@@ -671,7 +671,7 @@ $homePage.Tag = @{ Panel=$homeBody; Height=428; Top=0 }
 $title = Add-Heading $homeBody ("部署自己的" + [Environment]::NewLine + "Cloudflare Pages 站点") 37 60 434 114 25
 $summary = Add-Text $homeBody '从浏览器授权、域名配置到打开站点后台，在一个 Windows 图形向导里完成。' 39 185 370 58
 $summary.ForeColor = $theme.Muted
-Add-Action $homeBody '开始部署  →' 39 263 156 { Show-WizardPage $script:pages[1] } $true
+Add-Action $homeBody '开始部署  →' 39 263 156 { Show-WizardPage $authPage } $true
 Add-Action $homeBody '管理已有站点' 209 263 152 { Show-WizardPage $managePage }
 
 $workflow = Add-Card $homeBody 469 39 346 292 $theme.PaleBlue 22
@@ -680,8 +680,8 @@ $workflowCard = Add-Card $workflow 18 18 310 256 $theme.Surface
 $workflowCard.Anchor = 'Top,Left,Right'
 [void](Add-Heading $workflowCard '部署流程' 19 15 270 34 13)
 $flow = @(
-    @{Title='准备域名'; Detail='DNSHE 域名和 API 授权'},
     @{Title='授权 Cloudflare'; Detail='在浏览器中登录并确认授权'},
+    @{Title='准备域名'; Detail='DNSHE 域名和 API 授权'},
     @{Title='部署站点'; Detail='创建 Pages 和 KV，绑定域名'}
 )
 for ($i = 0; $i -lt $flow.Count; $i++) {
@@ -725,10 +725,23 @@ function Add-GuidePage([string]$title,[string]$body,[string]$linkText,[string]$u
     $card.Controls.Add($guide)
     $guideLink = Add-Link $card $linkText $url 27 428 730
     $guideLink.Anchor = 'Bottom,Left,Right'
+    return $page
 }
 
 
-Add-GuidePage '1 注册 DNSHE 域名' @'
+$authPage = Add-GuidePage '1 登录 Cloudflare' @'
+点击下方链接注册或登录自己的 Cloudflare 账号。
+
+你不需要自己创建 KV、Pages 或 DNS 记录。若浏览器授权失败，但部署 API 可访问，可按 README 中的备用方式使用 Cloudflare API Token。设置后从同一个 PowerShell 窗口启动应用，直接点击“我已完成授权，继续”。
+点击本页“开始 Cloudflare 授权”。授权工具会打开浏览器。
+在浏览器里完成登录和授权，再回到本页点击“我已完成授权，继续”。
+应用验证授权后会进入第 2 步，引导你注册或选择 DNSHE 域名。
+
+应用将创建 KV 与 Pages，绑定域名，并用 DNSHE API 添加 CNAME 记录。
+DNS 和证书传播可能需要时间。应用会先显示 pages.dev 后台地址。
+'@ '打开 Cloudflare 注册或登录页 ↗' 'https://dash.cloudflare.com/sign-up' '1  Cloudflare 授权' 143 $true
+
+$domainGuidePage = Add-GuidePage '2 注册 DNSHE 域名' @'
 如果还没有 DNSHE 账号，点击下方链接，在网站注册并登录。
 
 左侧点击“免费域名”，再点击“注册新域名”。
@@ -738,9 +751,9 @@ Add-GuidePage '1 注册 DNSHE 域名' @'
 
 如果已经注册过域名，打开 DNSHE 的“我的域名”，复制完整域名即可，不用重复注册。
 可用后缀和名额以 DNSHE 网站当前显示为准。
-'@ '打开 DNSHE，注册或查看我的域名 ↗' 'https://my.dnshe.com/' '1  注册域名' 108
+'@ '打开 DNSHE，注册或查看我的域名 ↗' 'https://my.dnshe.com/' '2  注册域名' 108
 
-Add-GuidePage '2 创建 DNSHE 授权' @'
+[void](Add-GuidePage '3 创建 DNSHE 授权' @'
 在 DNSHE 左侧点击“免费域名”或首页的“域名管理”。
 进入“API 管理”，创建一组 API Key 和 API Secret。
 
@@ -749,22 +762,9 @@ Secret 通常只显示一次；创建后复制到第 4 步的输入框。
 不要把 Key、Secret 发到聊天、截图或 GitHub。
 
 如果 DNSHE 域名已有冲突的 DNS 记录，应用会提示你检查，不会覆盖原记录。
-'@ '打开 DNSHE API 管理入口 ↗' 'https://my.dnshe.com/' '2  DNSHE 授权' 125
-
-Add-GuidePage '3 登录 Cloudflare' @'
-点击下方链接注册或登录自己的 Cloudflare 账号。
-
-你不需要自己创建 KV、Pages 或 DNS 记录。若浏览器授权失败，但部署 API 可访问，可按 README 中的备用方式使用 Cloudflare API Token。设置后从同一个 PowerShell 窗口启动应用，直接点击“我已完成授权，继续”。
-点击本页“开始 Cloudflare 授权”。授权工具会打开浏览器。
-在浏览器里完成登录和授权，再回到本页点击“我已完成授权，继续”。
-应用验证授权有效后才会进入第 4 步，不会一直卡在等待中。
-
-应用将创建 KV 与 Pages，绑定域名，并用 DNSHE API 添加 CNAME 记录。
-DNS 和证书传播可能需要时间。应用会先显示 pages.dev 后台地址。
-'@ '打开 Cloudflare 注册或登录页 ↗' 'https://dash.cloudflare.com/sign-up' '3  Cloudflare 授权' 143 $true
+'@ '打开 DNSHE API 管理入口 ↗' 'https://my.dnshe.com/' '3  DNSHE 授权' 125)
 
 $script:cloudflareVerified = $false
-$authPage = $script:pages[3]
 $authCard = $guideCards[$authPage]
 $authButton = New-Object Windows.Forms.Button
 $authButton.Text = '开始 Cloudflare 授权'
@@ -788,8 +788,7 @@ $verifiedButton.add_Click({
             throw '请在启动应用前设置 32 位的 CLOUDFLARE_ACCOUNT_ID。'
         }
         $script:cloudflareVerified = $true
-        $next.Enabled = $true
-        Show-WizardPage $deployPage
+        Show-WizardPage $domainGuidePage
     } catch { [Windows.Forms.MessageBox]::Show($_.Exception.Message) }
     finally { $ErrorActionPreference = $oldPreference; $json = $null; $auth = $null }
 })
@@ -1276,7 +1275,7 @@ function Complete-Deployment([string]$detail, [bool]$failed) {
         $progress.Text = "$($stageNames[$state.FailedStep])失败。修正后可以继续本次部署。"
         $advice = @(
             '请检查输入后重试。',
-            '如授权已过期，请回到第 3 步重新授权。遇到 403 时请核对 Cloudflare 账号与权限。',
+            '如授权已过期，请回到第 1 步重新授权。遇到 403 时请核对 Cloudflare 账号与权限。',
             '请检查 Cloudflare 的 KV 权限或配额，然后点「继续部署」。',
             '请检查 Cloudflare Pages 权限与网络，然后点「继续部署」。',
             '请根据下方信息修正 Cloudflare 或 DNSHE 配置，再点「重试域名绑定」。'
