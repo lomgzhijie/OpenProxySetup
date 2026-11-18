@@ -2,7 +2,7 @@
 
 [简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-[Windows x64 다운로드](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [Android 미리보기 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/tag/android-v0.3.4) · [문제 신고](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [기여하기](CONTRIBUTING.md)
+[Windows x64 다운로드](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [Android APK](https://github.com/lomgzhijie/OpenProxySetup/releases/tag/android-v0.3.4) · [문제 신고](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [기여하기](CONTRIBUTING.md)
 
 Windows용 배포 앱입니다. 본인의 Cloudflare 계정으로 로그인하고 관리자 비밀번호를 설정합니다. 앱은 함께 제공되는 [edgetunnel](https://github.com/cmliu/edgetunnel) 소스로 Cloudflare KV와 Pages를 만들고 클릭할 수 있는 사이트 주소를 표시합니다. 사이트의 `/admin`에 접속해 설정한 비밀번호로 로그인하면 업스트림 관리 화면에서 노드와 구독 링크를 확인할 수 있습니다.
 

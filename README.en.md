@@ -2,7 +2,7 @@
 
 [简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-[Download Windows x64](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [Android preview APK](https://github.com/lomgzhijie/OpenProxySetup/releases/tag/android-v0.3.4) · [Report an issue](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [Contribute](CONTRIBUTING.md)
+[Download Windows x64](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [Android APK](https://github.com/lomgzhijie/OpenProxySetup/releases/tag/android-v0.3.4) · [Report an issue](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [Contribute](CONTRIBUTING.md)
 
 This Windows deployment app signs in with your own Cloudflare account and lets you set an administrator password. It uses the bundled [edgetunnel](https://github.com/cmliu/edgetunnel) source to create Cloudflare KV and Pages resources and displays a clickable site address. Open the site’s `/admin` page and enter the password to view nodes and subscription links in the upstream dashboard.
 
