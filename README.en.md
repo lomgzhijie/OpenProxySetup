@@ -8,6 +8,12 @@ This Windows deployment app signs in with your own Cloudflare account and lets y
 
 The project provides a deployment wizard. Each user deploys to their own Cloudflare account. Shared nodes, accounts, and hosting are outside the scope of the project.
 
+## Deployment video tutorial
+
+Use the player below to watch the Windows deployment walkthrough. Full-screen playback is available.
+
+https://github.com/user-attachments/assets/d3aa2429-2228-4f9d-980f-1aeb2a110b9f
+
 ## Download and use
 
 The home screen shows a legal notice and offers direct access to the admin dashboard. After deployment, the app fills in the site address and administrator password. For an existing site, enter them manually. Sign in to the dashboard in your browser. The password remains in the current app window and can be copied or cleared.
