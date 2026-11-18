@@ -55,6 +55,8 @@ def render_readme(source: str, lang: str) -> tuple[str, str]:
                 child.attrSet("href", doc_path(READMES[href]))
             elif href == f"{REPO}/releases/latest":
                 child.attrSet("href", f"../?lang={lang}#downloads")
+            elif href and href.startswith(f"{REPO}/releases/tag/android-"):
+                child.attrSet("href", f"../?lang={lang}#android-download")
             elif href and not href.startswith(("#", "https://", "http://", "mailto:")):
                 child.attrSet("href", urljoin(f"{REPO}/blob/main/", href))
 

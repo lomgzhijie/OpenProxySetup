@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#f6f8fc">
-<meta name="description" content="OpenProxySetup：Windows 上的 Cloudflare Pages 部署向导。">
-<title>OpenProxySetup — Windows 部署向导</title>
+<meta name="description" content="OpenProxySetup：适用于 Windows 和 Android 的 Cloudflare Pages 部署向导。">
+<title>OpenProxySetup — Windows 和 Android 部署向导</title>
 <link rel="icon" type="image/png" sizes="64x64" href="openproxysetup-icon.png">
 <script src="theme.js?v=1"></script>
-<link rel="stylesheet" href="style.css?v=theme">
-<script src="site.js?v=cloudflare-first" defer></script>
+<link rel="stylesheet" href="style.css?v=android-download">
+<script src="site.js?v=android-download" defer></script>
 </head>
 <body>
 <header class="top">
@@ -32,16 +32,16 @@
 <main class="shell">
   <section class="hero">
     <div class="intro">
-      <p class="eyebrow">v1.4.0 <span aria-hidden="true">·</span> Windows x64</p>
+      <p class="eyebrow">Windows x64 <span aria-hidden="true">·</span> Android</p>
       <h1 data-i="headline">部署自己的<br>Cloudflare Pages 站点</h1>
-      <p class="summary" data-i="summary">从浏览器授权、域名配置到打开站点后台，在一个 Windows 图形向导里完成。</p>
-      <div class="actions"><a class="button" href="#downloads" data-i="heroDownload">立即下载 ↓</a><a class="motion" href="https://github.com/lomgzhijie/OpenProxySetup">GitHub ↗</a></div>
+      <p class="summary" data-i="summary">用 Windows 或 Android 向导完成 Cloudflare 授权、域名配置和站点部署。</p>
+      <div class="actions"><a class="button" href="#downloads" data-i="heroDownload">立即下载 ↓</a><a class="motion" href="#android-download" data-i="heroAndroid">Android APK ↓</a><a class="motion" href="https://github.com/lomgzhijie/OpenProxySetup">GitHub ↗</a></div>
     </div>
     <div class="illustration" aria-label="Cloudflare Pages deployment workflow">
       <div class="preview">
         <div class="preview-top"><img class="mark small" src="openproxysetup-icon.png" width="25" height="25" alt=""><span>OpenProxySetup</span><i aria-hidden="true"></i></div>
         <ol class="flow">
-          <li><span class="step">1</span><div><b data-i="step1">授权 Cloudflare</b><small>Cloudflare OAuth</small></div></li>
+          <li><span class="step">1</span><div><b data-i="step1">授权 Cloudflare</b><small>OAuth / API Token</small></div></li>
           <li><span class="step">2</span><div><b data-i="step2">准备域名</b><small>DNSHE</small></div></li>
           <li><span class="step">3</span><div><b data-i="step3">部署站点</b><small>Cloudflare Pages + KV</small></div></li>
         </ol>
@@ -49,16 +49,17 @@
     </div>
   </section>
   <section id="downloads">
-    <div class="section-title"><h2 data-i="downloads">下载 OpenProxySetup</h2><p>Windows 10 / 11 · x64</p></div>
+    <div class="section-title"><h2 data-i="downloads">下载 OpenProxySetup</h2><p>Windows 10 / 11 · Android 8.0+</p></div>
     <div class="cards">
       <article class="card featured"><span class="format">EXE · v1.4.0</span><h3 data-i="setup">安装版</h3><p data-i="setupDesc">选择安装位置，然后打开部署向导。</p><a class="button" href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.0/OpenProxySetup-windows-x64-setup.exe" data-i="setupLink">下载安装版 ↓</a></article>
+      <article class="card" id="android-download"><span class="format">APK · v0.3.4</span><h3 data-i="android">Android 预览版</h3><p data-i="androidDesc">支持 Android 8.0 及以上。下载后打开 APK 安装。</p><a class="button" href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/android-v0.3.4/OpenProxySetup-android-v0.3.4.apk" data-i="androidLink">下载 Android APK ↓</a></article>
       <article class="card"><span class="format">ZIP · v1.4.0</span><h3 data-i="portable">免安装版</h3><p data-i="portableDesc">完整解压后运行「OpenProxySetup.exe」。</p><a class="text-link" href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.0/OpenProxySetup-windows-x64-portable.zip" data-i="portableLink">下载免安装版 ↓</a></article>
       <article class="card"><span class="format">ZIP · v1.4.0</span><h3 data-i="cmd">经典 CMD 版</h3><p data-i="cmdDesc">完整解压后运行「OpenProxySetup.cmd」。</p><a class="text-link" href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.0/OpenProxySetup-windows-x64-cmd-v1.4.0.zip" data-i="cmdLink">下载 CMD 版 ↓</a></article>
     </div>
   </section>
   <section class="faq" aria-labelledby="faq-title">
     <h2 id="faq-title" data-i="faq">常见问题</h2>
-    <details><summary data-i="q1">首次使用，应该下载哪个版本？</summary><p data-i="a1">建议选择安装版。想直接在文件夹里运行时，可以下载免安装版。</p></details>
+    <details><summary data-i="q1">首次使用，应该下载哪个版本？</summary><p data-i="a1">Windows 用户可选安装版，或用免安装版直接从文件夹运行。Android 用户请选择 APK。</p></details>
     <details><summary data-i="q2">部署前需要准备什么？</summary><p data-i="a2">准备自己的 Cloudflare 账号、DNSHE 域名和 DNSHE API 凭据。向导会提示你完成浏览器授权和部署。</p></details>
   </section>
 </main>
