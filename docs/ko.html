@@ -36,7 +36,8 @@
   <aside class="docs-sidebar">
     <nav aria-label="이 페이지의 목차">
       <p>이 페이지의 목차</p>
-      <ul><li><a href="#다운로드-및-사용">다운로드 및 사용</a></li>
+      <ul><li><a href="#android-apk">Android APK</a></li>
+<li><a href="#windows-버전-다운로드-및-사용">Windows 버전 다운로드 및 사용</a></li>
 <li><a href="#지원-클라이언트">지원 클라이언트</a></li>
 <li><a href="#zip-포터블-버전">ZIP 포터블 버전</a></li>
 <li><a href="#유지보수용-패키징">유지보수용 패키징</a></li>
@@ -47,9 +48,16 @@
   <article class="docs-article">
 <h1>自建机场</h1>
 <p><a href="../?lang=ko#downloads">Windows x64 다운로드</a> · <a href="../?lang=ko#android-download">Android APK</a> · <a href="https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose">문제 신고</a> · <a href="https://github.com/lomgzhijie/OpenProxySetup/blob/main/CONTRIBUTING.md">기여하기</a></p>
-<p>Windows용 배포 앱입니다. 본인의 Cloudflare 계정으로 로그인하고 관리자 비밀번호를 설정합니다. 앱은 함께 제공되는 <a href="https://github.com/cmliu/edgetunnel">edgetunnel</a> 소스로 Cloudflare KV와 Pages를 만들고 클릭할 수 있는 사이트 주소를 표시합니다. 사이트의 <code>/admin</code>에 접속해 설정한 비밀번호로 로그인하면 업스트림 관리 화면에서 노드와 구독 링크를 확인할 수 있습니다.</p>
+<p>OpenProxySetup은 Windows와 Android용 배포 마법사를 제공합니다. 본인의 Cloudflare 계정으로 로그인하고 관리자 비밀번호를 설정합니다. 앱은 함께 제공되는 <a href="https://github.com/cmliu/edgetunnel">edgetunnel</a> 소스로 Cloudflare KV와 Pages를 만들고 클릭할 수 있는 사이트 주소를 표시합니다. 사이트의 <code>/admin</code>에 접속해 설정한 비밀번호로 로그인하면 업스트림 관리 화면에서 노드와 구독 링크를 확인할 수 있습니다.</p>
 <p>이 프로젝트는 배포 마법사를 제공합니다. 각 사용자는 본인의 Cloudflare 계정에 배포합니다. 공유 노드, 계정, 클라우드 서비스 제공은 프로젝트 범위에 포함되지 않습니다.</p>
-<h2 id="다운로드-및-사용">다운로드 및 사용</h2>
+<h2 id="android-apk">Android APK</h2>
+<p><strong>Android 8.0 이상</strong>을 지원합니다. <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.0/OpenProxySetup-android-v0.3.4.apk">Android v0.3.4 APK</a>를 내려받아 휴대전화에서 열면 앱을 설치하거나 업데이트할 수 있습니다.</p>
+<ol>
+<li>앱 내 그림 안내에 따라 Cloudflare API 토큰을 만들고 Account ID를 복사하세요. 앱으로 돌아와 인증을 확인합니다.</li>
+<li>마법사를 따라 DNSHE 도메인을 등록하고 API 인증 정보를 받습니다. 인증 정보와 관리자 비밀번호를 입력한 뒤 배포를 시작하세요.</li>
+<li>Pages 게시가 완료되면 <code>pages.dev</code> 관리 화면을 먼저 열 수 있습니다. 사용자 지정 도메인 검증에는 약 5분을 예상하세요. 1분이 지나도 검증 중이면 「重新验证」 버튼을 눌러 상태를 확인할 수 있습니다.</li>
+</ol>
+<h2 id="windows-버전-다운로드-및-사용">Windows 버전 다운로드 및 사용</h2>
 <p>홈 화면에 법률 관련 안내가 표시되며 「后台管理」(관리 화면)로 바로 이동할 수도 있습니다. 배포에 성공하면 사이트 주소와 관리자 비밀번호가 자동 입력됩니다. 기존 사이트는 직접 입력한 뒤 브라우저에서 관리 화면에 로그인합니다. 비밀번호는 현재 앱 창에만 남으며 필요할 때 복사하거나 지울 수 있습니다.</p>
 <ol>
 <li><a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.0/OpenProxySetup-windows-x64-setup.exe">Windows x64 설치 프로그램</a>을 다운로드하고 실행한 뒤 설치 위치를 선택합니다. 설치 프로그램이 <code>自建机场</code> 폴더를 만들고 배포 마법사를 엽니다. 다음부터는 이 폴더의 <code>OpenProxySetup.exe</code>를 실행합니다.</li>
