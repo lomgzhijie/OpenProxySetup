@@ -2,7 +2,7 @@
 
 [简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-[下载 Windows x64 版](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [报告问题](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [参与贡献](CONTRIBUTING.md)
+[下载 Windows x64 版](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [Android 预览版 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/tag/android-v0.3.4) · [报告问题](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [参与贡献](CONTRIBUTING.md)
 
 一个供用户下载的 Windows 部署应用。用户用自己的 Cloudflare 账号登录，设置后台管理员密码，应用使用包内的 [edgetunnel](https://github.com/cmliu/edgetunnel) 源码创建 Cloudflare KV 和 Pages，并给出可点击的网站地址。用户访问网站的 `/admin`，输入刚设置的密码，即可在上游后台查看节点和订阅链接。
 
