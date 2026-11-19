@@ -1061,9 +1061,14 @@ $siteEmpty = Add-Text $manageCard '还没有保存的站点，添加一个即可
 $manageStatus = Add-Text $manageCard '' 245 119 505 38
 $manageStatus.Anchor = 'Top,Left,Right'
 Add-Action $manageCard '打开站点' 30 411 142 { Open-SelectedSite } $true
-Add-Action $manageCard '编辑' 187 411 110 { if ($siteList.SelectedItem) { Edit-ManagedSite $siteList.SelectedItem } }
-Add-Action $manageCard '移除' 312 411 110 { Remove-SelectedSite }
-Add-Action $manageCard '清除全部本机记录' 437 411 310 {
+Add-Action $manageCard '编辑' 187 411 90 { if ($siteList.SelectedItem) { Edit-ManagedSite $siteList.SelectedItem } }
+Add-Action $manageCard '复制密码' 292 411 110 {
+    if (-not $siteList.SelectedItem) { $manageStatus.Text = '请先选择一个站点。'; return }
+    try { [Windows.Forms.Clipboard]::SetText($siteList.SelectedItem.password); $manageStatus.Text = '后台密码已复制。' }
+    catch { $manageStatus.Text = '暂时无法访问剪贴板，请重试。' }
+}
+Add-Action $manageCard '移除' 417 411 90 { Remove-SelectedSite }
+Add-Action $manageCard '清除全部本机记录' 522 411 225 {
     if ([Windows.Forms.MessageBox]::Show($form,'清除全部保存的站点、密码和登录会话？','Open Proxy Setup','OKCancel','Question') -ne 'OK') { return }
     try {
         Remove-SavedSite

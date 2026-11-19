@@ -657,8 +657,8 @@ public final class MainActivity extends Activity {
                 name.setContentDescription("打开站点 " + SiteAuth.domain(site.url));
                 line.addView(name, new LinearLayout.LayoutParams(0, dp(54), 1));
                 Button menu = action("⋯", false, () -> dialog().setTitle(SiteAuth.domain(site.url))
-                    .setItems(new String[]{"编辑站点", "移除站点"}, (d, which) -> {
-                        if (which == 0) editSite(site); else removeSite(site);
+                    .setItems(new String[]{"编辑站点", "复制密码", "移除站点"}, (d, which) -> {
+                        if (which == 0) editSite(site); else if(which == 1) copySitePassword(site); else removeSite(site);
                     }).show());
                 LinearLayout.LayoutParams space = new LinearLayout.LayoutParams(dp(46), dp(54));
                 space.leftMargin = dp(6); line.addView(menu, space); append(section, line, 0);
@@ -715,6 +715,15 @@ public final class MainActivity extends Activity {
                     render(MANAGE); message("已移除该站点及其登录会话。");
                 } catch (Exception e) { message("移除失败，请重试。"); }
             }).setNegativeButton("取消",null).show();
+    }
+
+    private void copySitePassword(SavedSite.Site site) {
+        ClipData clip=ClipData.newPlainText("后台密码",site.password);
+        if(Build.VERSION.SDK_INT>=33){
+            PersistableBundle extras=new PersistableBundle();extras.putBoolean("android.content.extra.IS_SENSITIVE",true);
+            clip.getDescription().setExtras(extras);
+        }
+        getSystemService(ClipboardManager.class).setPrimaryClip(clip);message("后台密码已复制。");
     }
 
     private void rememberDeploymentSite(String address) {
