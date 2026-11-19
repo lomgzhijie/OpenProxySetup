@@ -1,5 +1,6 @@
 ﻿# Windows PowerShell 5.1 desktop wizard. Keep this file UTF-8 with BOM.
 $ErrorActionPreference = 'Stop'
+$script:appVersion = '1.4.1'
 $deployScript = Join-Path $PSScriptRoot 'deploy.ps1'
 $bundledNode = Join-Path $PSScriptRoot 'runtime\node.exe'
 $bundledWrangler = Join-Path $PSScriptRoot 'runtime\node_modules\wrangler\bin\wrangler.js'
@@ -561,8 +562,9 @@ foreach ($bar in @($navigation,$footer)) {
         } finally { $pen.Dispose() }
     })
 }
-$footerText = Add-Text $footer 'Windows 部署向导 · v1.4.0' 32 20 320 26
+$footerText = Add-Text $footer ("Windows 部署向导 · v" + $script:appVersion) 32 20 275 26
 $footerText.ForeColor = $theme.Muted
+$updateLink = Add-Link $footer '检查更新' '' 318 20 160
 
 $viewport = New-Object Windows.Forms.Panel
 $viewport.Dock = 'Fill'
@@ -1402,6 +1404,110 @@ function Start-Deployment {
 
 $deployButton.add_Click({ Start-Deployment })
 $retry.add_Click({ Start-Deployment })
+
+$script:updateHandle = $null
+$script:updateResult = $null
+$script:updatePowerShell = $null
+$script:updateRunspace = $null
+$script:updateManual = $false
+$updateTimer = New-Object Windows.Forms.Timer
+$updateTimer.Interval = 500
+
+function Show-AppUpdate($available) {
+    $dialog = New-Object Windows.Forms.Form
+    $dialog.Text = 'Open Proxy Setup 更新'
+    $dialog.StartPosition = 'CenterParent'
+    $dialog.ClientSize = New-Object Drawing.Size(480,185)
+    $dialog.FormBorderStyle = 'FixedDialog'
+    $dialog.MaximizeBox = $dialog.MinimizeBox = $false
+    $dialog.BackColor = $theme.Surface
+    $dialog.Font = $form.Font
+    $message = Add-Text $dialog ("发现新版本 v" + $available.Version + [Environment]::NewLine +
+        "当前版本 v" + $script:appVersion + "。下载完成后运行安装程序进行更新。") 22 24 436 76
+    $message.ForeColor = $theme.Ink
+    Add-Action $dialog '下载更新' 22 123 135 {} $true
+    Add-Action $dialog '前往官网' 172 123 135 {}
+    Add-Action $dialog '稍后' 322 123 135 {}
+    $buttons = @($dialog.Controls | Where-Object { $_ -is [Windows.Forms.Button] })
+    $buttons[0].DialogResult = 'Yes'
+    $buttons[1].DialogResult = 'No'
+    $buttons[2].DialogResult = 'Cancel'
+    $dialog.CancelButton = $buttons[2]
+    try {
+        $choice = $dialog.ShowDialog($form)
+        if ($choice -eq 'Yes') { Start-Process -FilePath $available.DownloadUrl }
+        elseif ($choice -eq 'No') { Start-Process -FilePath 'https://openproxysetup.ccwu.cc/#downloads' }
+    } finally { $dialog.Dispose() }
+}
+
+function Start-AppUpdateCheck([bool]$manual) {
+    if ($script:updateHandle) { return }
+    if ($manual -and $script:updateResult) {
+        if (-not $script:deploymentHandle) {
+            $ready = $script:updateResult
+            $script:updateResult = $null
+            Show-AppUpdate $ready
+        }
+        return
+    }
+    $script:updateManual = $manual
+    if ($manual) { $updateLink.Text = '正在检查更新…' }
+    try {
+        $script:updateRunspace = [runspacefactory]::CreateRunspace()
+        $script:updateRunspace.Open()
+        $script:updatePowerShell = [powershell]::Create()
+        $script:updatePowerShell.Runspace = $script:updateRunspace
+        [void]$script:updatePowerShell.AddScript({
+            param($path, $installed)
+            . $path
+            Get-OpenProxySetupUpdate -CurrentVersion $installed
+        }.ToString()).AddArgument((Join-Path $PSScriptRoot 'update.ps1')).AddArgument($script:appVersion)
+        $script:updateHandle = $script:updatePowerShell.BeginInvoke()
+        $updateTimer.Start()
+    } catch {
+        if ($script:updatePowerShell) { $script:updatePowerShell.Dispose() }
+        if ($script:updateRunspace) { $script:updateRunspace.Dispose() }
+        $script:updateHandle = $null
+        $updateLink.Text = '检查更新'
+        if ($manual) { [Windows.Forms.MessageBox]::Show($form,'暂时无法检查更新，请前往官网下载。','检查更新') }
+    }
+}
+
+$updateTimer.add_Tick({
+    if ($script:updateHandle -and $script:updateHandle.IsCompleted) {
+        $failed = $false
+        try {
+            $found = @($script:updatePowerShell.EndInvoke($script:updateHandle))
+            $failed = $script:updatePowerShell.HadErrors
+            if (-not $failed -and $found.Count -gt 0) { $script:updateResult = $found[0] }
+        } catch { $failed = $true }
+        finally {
+            $script:updatePowerShell.Dispose()
+            $script:updateRunspace.Dispose()
+            $script:updateHandle = $null
+        }
+        $updateLink.Text = '检查更新'
+        if ($script:updateManual -and -not $script:updateResult) {
+            $detail = if ($failed) { '暂时无法检查更新，请检查网络或前往官网下载。' } else { '当前已是最新版本 v' + $script:appVersion }
+            [Windows.Forms.MessageBox]::Show($form,$detail,'检查更新') | Out-Null
+        }
+    }
+    if ($script:updateResult -and -not $script:deploymentHandle -and $form.ContainsFocus) {
+        $ready = $script:updateResult
+        $script:updateResult = $null
+        $updateTimer.Stop()
+        Show-AppUpdate $ready
+    }
+    if (-not $script:updateHandle -and -not $script:updateResult) { $updateTimer.Stop() }
+})
+$updateLink.add_LinkClicked({ Start-AppUpdateCheck $true })
+$form.add_Shown({ Start-AppUpdateCheck $false })
+$form.add_FormClosed({
+    $updateTimer.Stop()
+    $updateTimer.Dispose()
+    if ($script:updatePowerShell) { $script:updatePowerShell.Dispose() }
+    if ($script:updateRunspace) { $script:updateRunspace.Dispose() }
+})
 Show-WizardPage $homePage
 Set-Appearance (Read-Appearance)
 Set-DisplayLayout

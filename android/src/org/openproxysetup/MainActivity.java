@@ -80,6 +80,8 @@ public final class MainActivity extends Activity {
     private String domain = "", key = "", secret = "", password = "", submittedPassword = "", boundDomain = "";
     private String manageUrl = "", managePassword = "", progressMessage = "";
     private Deployment deployment;
+    private boolean updateChecking;
+    private UpdateChecker availableUpdate;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -89,6 +91,7 @@ public final class MainActivity extends Activity {
         dark = getPreferences(MODE_PRIVATE).getBoolean("dark", systemDark);
         docLanguage = getPreferences(MODE_PRIVATE).getInt("docLanguage", 0);
         render(HOME);
+        handler.post(() -> checkForUpdates(false));
     }
 
     @Override
@@ -96,6 +99,7 @@ public final class MainActivity extends Activity {
         super.onResume();
         resumed = true;
         tick();
+        showAvailableUpdate();
     }
 
     @Override
@@ -221,6 +225,53 @@ public final class MainActivity extends Activity {
         title("开始前");
         copy("请确认手机网络可以访问 Cloudflare。使用 VPN 或代理服务时，请遵守所在地适用的法律法规。");
         button("项目网站 ↗", false, () -> open(SITE));
+        button("检查更新 · v" + currentVersion(), false, () -> checkForUpdates(true));
+    }
+
+    private String currentVersion() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (android.content.pm.PackageManager.NameNotFoundException error) {
+            throw new IllegalStateException(error);
+        }
+    }
+
+    private void checkForUpdates(boolean manual) {
+        if (updateChecking) return;
+        updateChecking = true;
+        if (manual) android.widget.Toast.makeText(this, "正在检查新版本…", android.widget.Toast.LENGTH_SHORT).show();
+        final String installed = currentVersion();
+        new Thread(() -> {
+            UpdateChecker found = null;
+            boolean failed = false;
+            try { found = UpdateChecker.check(installed); }
+            catch (Exception error) { failed = true; }
+            final UpdateChecker result = found;
+            final boolean unavailable = failed;
+            runOnUiThread(() -> {
+                updateChecking = false;
+                if (isFinishing() || isDestroyed()) return;
+                availableUpdate = result;
+                if (result != null) showAvailableUpdate();
+                else if (manual && resumed) {
+                    dialog().setTitle(unavailable ? "暂时无法检查更新" : "已是最新版本")
+                            .setMessage(unavailable ? "请检查网络后重试，或前往官网下载更新。" : "当前版本 v" + installed)
+                            .setPositiveButton("前往官网", (window, which) -> open(SITE + "#android-download"))
+                            .setNegativeButton("关闭", null).show();
+                }
+            });
+        }, "OpenProxySetup-Update").start();
+    }
+
+    private void showAvailableUpdate() {
+        if (!resumed || busy || availableUpdate == null || isFinishing() || isDestroyed()) return;
+        UpdateChecker update = availableUpdate;
+        availableUpdate = null;
+        dialog().setTitle("发现新版本 v" + update.version)
+                .setMessage("当前版本 v" + currentVersion() + "。下载完成后，打开 APK 覆盖安装。")
+                .setPositiveButton("下载更新", (window, which) -> open(update.downloadUrl))
+                .setNeutralButton("前往官网", (window, which) -> open(SITE + "#android-download"))
+                .setNegativeButton("稍后", null).show();
     }
 
     private void authorization() {
@@ -849,6 +900,7 @@ public final class MainActivity extends Activity {
                     busy = false;
                     updateControls(shell, true);
                     done.run();
+                    showAvailableUpdate();
                 });
             } catch (Exception error) {
                 runOnUiThread(() -> {
@@ -864,6 +916,7 @@ public final class MainActivity extends Activity {
                         updateControls(shell, true);
                         message(reason);
                     }
+                    showAvailableUpdate();
                 });
             }
         }, "OpenProxySetup").start();

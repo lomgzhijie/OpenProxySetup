@@ -7,8 +7,8 @@ using System.Windows.Forms;
 [assembly: AssemblyTitle("自建机场")]
 [assembly: AssemblyProduct("自建机场")]
 [assembly: AssemblyDescription("Windows 部署向导")]
-[assembly: AssemblyVersion("1.4.0.0")]
-[assembly: AssemblyFileVersion("1.4.0.0")]
+[assembly: AssemblyVersion("1.4.1.0")]
+[assembly: AssemblyFileVersion("1.4.1.0")]
 
 internal static class Launcher
 {
@@ -19,7 +19,7 @@ internal static class Launcher
         Application.EnableVisualStyles();
         string root = AppDomain.CurrentDomain.BaseDirectory;
         string[] required = {
-            "app.ps1", "readme-view.ps1", "deploy.ps1", "proxy.ps1", "dnshe.ps1", "links.ps1",
+            "app.ps1", "update.ps1", "readme-view.ps1", "deploy.ps1", "proxy.ps1", "dnshe.ps1", "links.ps1",
             "Cloudflare授权.cmd", "runtime/node.exe",
             "runtime/node_modules/wrangler/bin/wrangler.js",
             "vendor/edgetunnel/_worker.js"
