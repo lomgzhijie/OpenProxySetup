@@ -47,13 +47,13 @@
   </aside>
   <article class="docs-article">
 <h1>自建机场</h1>
-<p><a href="../?lang=ja#downloads">Windows x64 版をダウンロード</a> · <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/tag/v1.4.1">Android 版 APK</a> · <a href="https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose">問題を報告</a> · <a href="https://github.com/lomgzhijie/OpenProxySetup/blob/main/CONTRIBUTING.md">貢献する</a></p>
+<p><a href="../?lang=ja#downloads">Windows x64 版をダウンロード</a> · <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/tag/v1.4.2">Android 版 APK</a> · <a href="https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose">問題を報告</a> · <a href="https://github.com/lomgzhijie/OpenProxySetup/blob/main/CONTRIBUTING.md">貢献する</a></p>
 <p>OpenProxySetup は Windows と Android 向けのデプロイウィザードです。自分の Cloudflare アカウントでログインし、管理者パスワードを設定します。アプリは同梱の <a href="https://github.com/cmliu/edgetunnel">edgetunnel</a> ソースを使って Cloudflare KV と Pages を作成し、サイトのリンクを表示します。サイトの <code>/admin</code> を開き、設定したパスワードでログインすると、上流プロジェクトの管理画面でノードやサブスクリプションリンクを確認できます。</p>
 <p>本プロジェクトが提供するのはデプロイウィザードです。各ユーザーは自分の Cloudflare アカウントにデプロイします。共有ノード、アカウント、クラウドサービスの提供は対象外です。</p>
 <p>起動時に新しいバージョンを確認し、更新があればダイアログを表示します。「下载更新」（更新をダウンロード）、「前往官网」（公式サイト）、「稍后」（後で）を選べます。Android のホーム画面や Windows のウィンドウ下部からも確認できます。ダウンロードしたインストーラーを開いて更新します。この機能は Android v0.3.5 と Windows v1.4.1 以降で利用できます。</p>
 <h2 id="android-版-apk">Android 版 APK</h2>
 <h3>ダウンロードとインストール</h3>
-<p><strong>Android 8.0 以降</strong>に対応しています。<a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.1/OpenProxySetup-android-v0.3.5.apk">Android v0.3.5 の APK</a> をダウンロードし、スマートフォンで開いてインストールまたは更新します。</p>
+<p><strong>Android 8.0 以降</strong>に対応しています。<a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.2/OpenProxySetup-android-v0.3.6.apk">Android v0.3.6 の APK</a> をダウンロードし、スマートフォンで開いてインストールまたは更新します。</p>
 <h3>初回デプロイ</h3>
 <ol>
 <li><strong>Cloudflare を認証します。</strong> 手順 1 で API トークンのページを開きます。新規作成で Account ポリシーを選び、デプロイ先のアカウントに <code>Pages Write</code> と <code>Workers KV Storage Write</code> を付与します。トークンを作成してコピーします。</li>
@@ -64,11 +64,13 @@
 <li><strong>サイトの管理画面を開きます。</strong> 公開後は <code>pages.dev</code> の管理画面に、設定したパスワードでログインできます。カスタムドメインの検証には約 5 分を見込んでください。1 分経過すると「重新验证」から状態を確認できます。検証が完了したらカスタムドメインの管理画面を開けます。</li>
 </ol>
 <h3>既存サイトを管理する</h3>
-<p>ホーム画面の「管理已有站点」を選び、ドメイン名または HTTPS の URL を入力すると、ブラウザーで <code>/admin</code> を開けます。管理者パスワードを入力してコピーすることもできます。</p>
+<p>Windows と Android の両方で、アプリ内に <code>/admin</code> を表示でき、ライト・ダークモードの配色も統一されます。サイトの URL とパスワードを入力し、「记住此站点和密码」を有効にして「保存站点」または「在应用内打开后台」を押すと、次回起動時に復元されます。初回ログイン画面にはパスワードが入力され、有効期限内のログインセッションは再利用されます。デプロイ成功後も自動保存されます。</p>
+<p>認証情報は端末内で暗号化されます。Windows は現在のユーザーの DPAPI、Android は Android Keystore と AES-GCM を使用します。保存を無効にすると保存済みの認証情報が削除され、「清除本机站点与登录会话」で URL、パスワード、ログイン状態を消去できます。ドメインを変更するとパスワード入力がクリアされます。Cloudflare と DNSHE の API 認証情報は保存対象に含まれません。内蔵管理画面では設定、ノード、サブスクリプション機能を引き続き利用でき、再読み込みと外部ブラウザーで開く操作も可能です。</p>
+<p>Windows の内蔵管理画面には Microsoft Edge WebView2 Runtime が必要です。Windows 11 には通常含まれています。未導入の場合は <a href="https://developer.microsoft.com/microsoft-edge/webview2/">Microsoft 公式ページ</a>からインストールしてください。</p>
 <h2 id="windows-版のダウンロードと使い方">Windows 版のダウンロードと使い方</h2>
-<p>ホーム画面には法令に関する注意事項があり、「后台管理」（管理画面）に直接進むこともできます。デプロイ後はサイトのアドレスと管理者パスワードが自動入力されます。既存のサイトの場合は手動で入力し、ブラウザーで管理画面にログインします。パスワードは現在のアプリのウィンドウ内に保持され、コピーや消去ができます。</p>
+<p>ホーム画面には法令に関する注意事項があり、「后台管理」（管理画面）に直接進むこともできます。デプロイ後はサイトのアドレスと管理者パスワードが自動入力されます。既存サイトもアプリ内で管理でき、URL とパスワードを端末内に暗号化して保存できます。保存済みの情報とログイン状態は消去できます。</p>
 <ol>
-<li><a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.1/OpenProxySetup-windows-x64-setup.exe">Windows x64 インストーラー</a>をダウンロードして実行し、インストール先を選択します。「自建机场」フォルダーが作られ、ウィザードが開きます。次回からはフォルダー内の <code>OpenProxySetup.exe</code> をダブルクリックします。</li>
+<li><a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.2/OpenProxySetup-windows-x64-setup.exe">Windows x64 インストーラー</a>をダウンロードして実行し、インストール先を選択します。「自建机场」フォルダーが作られ、ウィザードが開きます。次回からはフォルダー内の <code>OpenProxySetup.exe</code> をダブルクリックします。</li>
 <li>手順 1 で「开始 Cloudflare 授权」を選び、ブラウザーで <a href="https://dash.cloudflare.com/sign-up">Cloudflare</a> に登録またはログインして認証します。ウィザードに戻り「我已完成授权，继续」を選びます。認証が確認されたら、手順 2 で <a href="https://my.dnshe.com/">DNSHE</a> のドメインを取得し、手順 3 の「ドメイン管理 → API 管理」で API Key と API Secret を作成します。Cloudflare の認証情報は Cloudflare のサイトで入力します。</li>
 <li>DNSHE ドメイン、API Key、API Secret、12 文字以上の管理者パスワードを入力してデプロイを開始します。アプリが KV、Pages、シークレットを作成してデプロイし、Pages にカスタムドメインの関連付けを申請します。さらに DNSHE API で <code>pages.dev</code> を指す CNAME を追加します。競合する既存の DNS レコードは保持されます。</li>
 <li>デプロイ完了後、表示された管理画面を開き、設定したパスワードでログインします。ノードまたはサブスクリプションリンクをコピーし、対応クライアントにインポートします。利用できる形式はデプロイ時の上流バージョンに依存します。カスタムドメインが有効になるまでは、表示された <code>pages.dev</code> アドレスを使えます。</li>
@@ -117,7 +119,7 @@
 </div>
 <h2 id="zip-ポータブル版">ZIP ポータブル版</h2>
 <p><code>OpenProxySetup-windows-x64-portable.zip</code> をすべて展開し、<code>OpenProxySetup.exe</code> をダブルクリックします。EXE、<code>runtime</code>、<code>vendor</code>、各スクリプトは同じフォルダーに置いてください。Windows の .NET Framework と Windows PowerShell 5.1 を使用します。起動に失敗した場合は、<code>启动应用.cmd</code> を実行してエラーを確認できます。</p>
-<p><a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.1/OpenProxySetup-windows-x64-cmd-v1.4.1.zip">v1.4.1 CMD 版</a>も利用できます。ZIP をすべて展開し、<code>OpenProxySetup.cmd</code> をダブルクリックしてください。</p>
+<p><a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.2/OpenProxySetup-windows-x64-cmd-v1.4.2.zip">v1.4.2 CMD 版</a>も利用できます。ZIP をすべて展開し、<code>OpenProxySetup.cmd</code> をダブルクリックしてください。</p>
 <h2 id="メンテナー向けのパッケージ作成">メンテナー向けのパッケージ作成</h2>
 <p>PowerShell で <code>npm ci --prefix runtime</code> を実行して指定バージョンの Wrangler をインストールし、Windows x64 版の <code>node.exe</code> と <code>NODE-LICENSE</code> を <code>runtime</code> に置きます。Windows PowerShell 5.1 で <code>./打包发布.ps1</code> を実行すると、EXE をコンパイルして ポータブル版と CMD 版の ZIP を作成します。ランチャーだけをコンパイルする場合は <code>./构建应用.ps1</code>、ZIP からインストーラー EXE を作成する場合は <code>./构建安装程序.ps1</code> を実行します。ランチャーのソースは <code>launcher/Launcher.cs</code> にあります。これらのコマンドはメンテナー向けです。ソースから起動する場合は <code>./app.ps1</code> を実行します。</p>
 <h2 id="動作の仕組みと範囲">動作の仕組みと範囲</h2>
