@@ -2,7 +2,7 @@
 
 [简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-[Windows x64 版をダウンロード](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [Android 版 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/tag/v1.4.1) · [問題を報告](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [貢献する](CONTRIBUTING.md)
+[Windows x64 版をダウンロード](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [Android 版 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/tag/v1.4.2) · [問題を報告](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [貢献する](CONTRIBUTING.md)
 
 OpenProxySetup は Windows と Android 向けのデプロイウィザードです。自分の Cloudflare アカウントでログインし、管理者パスワードを設定します。アプリは同梱の [edgetunnel](https://github.com/cmliu/edgetunnel) ソースを使って Cloudflare KV と Pages を作成し、サイトのリンクを表示します。サイトの `/admin` を開き、設定したパスワードでログインすると、上流プロジェクトの管理画面でノードやサブスクリプションリンクを確認できます。
 
@@ -14,7 +14,7 @@ OpenProxySetup は Windows と Android 向けのデプロイウィザードで�
 
 ### ダウンロードとインストール
 
-**Android 8.0 以降**に対応しています。[Android v0.3.5 の APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.1/OpenProxySetup-android-v0.3.5.apk) をダウンロードし、スマートフォンで開いてインストールまたは更新します。
+**Android 8.0 以降**に対応しています。[Android v0.3.6 の APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.2/OpenProxySetup-android-v0.3.6.apk) をダウンロードし、スマートフォンで開いてインストールまたは更新します。
 
 ### 初回デプロイ
 
@@ -27,13 +27,17 @@ OpenProxySetup は Windows と Android 向けのデプロイウィザードで�
 
 ### 既存サイトを管理する
 
-ホーム画面の「管理已有站点」を選び、ドメイン名または HTTPS の URL を入力すると、ブラウザーで `/admin` を開けます。管理者パスワードを入力してコピーすることもできます。
+Windows と Android の両方で、アプリ内に `/admin` を表示でき、ライト・ダークモードの配色も統一されます。サイトの URL とパスワードを入力し、「记住此站点和密码」を有効にして「保存站点」または「在应用内打开后台」を押すと、次回起動時に復元されます。初回ログイン画面にはパスワードが入力され、有効期限内のログインセッションは再利用されます。デプロイ成功後も自動保存されます。
+
+認証情報は端末内で暗号化されます。Windows は現在のユーザーの DPAPI、Android は Android Keystore と AES-GCM を使用します。保存を無効にすると保存済みの認証情報が削除され、「清除本机站点与登录会话」で URL、パスワード、ログイン状態を消去できます。ドメインを変更するとパスワード入力がクリアされます。Cloudflare と DNSHE の API 認証情報は保存対象に含まれません。内蔵管理画面では設定、ノード、サブスクリプション機能を引き続き利用でき、再読み込みと外部ブラウザーで開く操作も可能です。
+
+Windows の内蔵管理画面には Microsoft Edge WebView2 Runtime が必要です。Windows 11 には通常含まれています。未導入の場合は [Microsoft 公式ページ](https://developer.microsoft.com/microsoft-edge/webview2/)からインストールしてください。
 
 ## Windows 版のダウンロードと使い方
 
-ホーム画面には法令に関する注意事項があり、「后台管理」（管理画面）に直接進むこともできます。デプロイ後はサイトのアドレスと管理者パスワードが自動入力されます。既存のサイトの場合は手動で入力し、ブラウザーで管理画面にログインします。パスワードは現在のアプリのウィンドウ内に保持され、コピーや消去ができます。
+ホーム画面には法令に関する注意事項があり、「后台管理」（管理画面）に直接進むこともできます。デプロイ後はサイトのアドレスと管理者パスワードが自動入力されます。既存サイトもアプリ内で管理でき、URL とパスワードを端末内に暗号化して保存できます。保存済みの情報とログイン状態は消去できます。
 
-1. [Windows x64 インストーラー](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.1/OpenProxySetup-windows-x64-setup.exe)をダウンロードして実行し、インストール先を選択します。「自建机场」フォルダーが作られ、ウィザードが開きます。次回からはフォルダー内の `OpenProxySetup.exe` をダブルクリックします。
+1. [Windows x64 インストーラー](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.2/OpenProxySetup-windows-x64-setup.exe)をダウンロードして実行し、インストール先を選択します。「自建机场」フォルダーが作られ、ウィザードが開きます。次回からはフォルダー内の `OpenProxySetup.exe` をダブルクリックします。
 2. 手順 1 で「开始 Cloudflare 授权」を選び、ブラウザーで [Cloudflare](https://dash.cloudflare.com/sign-up) に登録またはログインして認証します。ウィザードに戻り「我已完成授权，继续」を選びます。認証が確認されたら、手順 2 で [DNSHE](https://my.dnshe.com/) のドメインを取得し、手順 3 の「ドメイン管理 → API 管理」で API Key と API Secret を作成します。Cloudflare の認証情報は Cloudflare のサイトで入力します。
 3. DNSHE ドメイン、API Key、API Secret、12 文字以上の管理者パスワードを入力してデプロイを開始します。アプリが KV、Pages、シークレットを作成してデプロイし、Pages にカスタムドメインの関連付けを申請します。さらに DNSHE API で `pages.dev` を指す CNAME を追加します。競合する既存の DNS レコードは保持されます。
 4. デプロイ完了後、表示された管理画面を開き、設定したパスワードでログインします。ノードまたはサブスクリプションリンクをコピーし、対応クライアントにインポートします。利用できる形式はデプロイ時の上流バージョンに依存します。カスタムドメインが有効になるまでは、表示された `pages.dev` アドレスを使えます。
@@ -65,7 +69,7 @@ DNSHE の API Key と API Secret は CNAME の追加に必要です。アプリ�
 
 `OpenProxySetup-windows-x64-portable.zip` をすべて展開し、`OpenProxySetup.exe` をダブルクリックします。EXE、`runtime`、`vendor`、各スクリプトは同じフォルダーに置いてください。Windows の .NET Framework と Windows PowerShell 5.1 を使用します。起動に失敗した場合は、`启动应用.cmd` を実行してエラーを確認できます。
 
-[v1.4.1 CMD 版](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.1/OpenProxySetup-windows-x64-cmd-v1.4.1.zip)も利用できます。ZIP をすべて展開し、`OpenProxySetup.cmd` をダブルクリックしてください。
+[v1.4.2 CMD 版](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.2/OpenProxySetup-windows-x64-cmd-v1.4.2.zip)も利用できます。ZIP をすべて展開し、`OpenProxySetup.cmd` をダブルクリックしてください。
 
 ## メンテナー向けのパッケージ作成
 

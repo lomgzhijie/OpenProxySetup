@@ -25,6 +25,7 @@ $previousJavaHome = $env:JAVA_HOME
 try {
     $env:JAVA_HOME = $Jdk
     New-Item -ItemType Directory -Path $classes,$assets,$dex -Force | Out-Null
+    Copy-Item -LiteralPath (Join-Path (Split-Path -Parent $root) 'assets\admin-theme.js') -Destination $assets
     foreach ($file in '_worker.js','LICENSE','UPSTREAM_COMMIT') {
         Copy-Item -LiteralPath (Join-Path $vendor $file) -Destination $assets
     }

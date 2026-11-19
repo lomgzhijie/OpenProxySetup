@@ -2,7 +2,7 @@
 
 [简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-[Download Windows x64](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [Android APK](https://github.com/lomgzhijie/OpenProxySetup/releases/tag/v1.4.1) · [Report an issue](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [Contribute](CONTRIBUTING.md)
+[Download Windows x64](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [Android APK](https://github.com/lomgzhijie/OpenProxySetup/releases/tag/v1.4.2) · [Report an issue](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [Contribute](CONTRIBUTING.md)
 
 OpenProxySetup provides deployment wizards for Windows and Android. Authorize your own Cloudflare account and set an administrator password. It uses the bundled [edgetunnel](https://github.com/cmliu/edgetunnel) source to create Cloudflare KV and Pages resources and displays a clickable site address. Open the site’s `/admin` page and enter the password to view nodes and subscription links in the upstream dashboard.
 
@@ -14,7 +14,7 @@ The app checks for updates at startup and shows a dialog when a newer version is
 
 ### Download and install
 
-Requires **Android 8.0 or later**. Download the [Android v0.3.5 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.1/OpenProxySetup-android-v0.3.5.apk) and open it on your phone to install or update the app.
+Requires **Android 8.0 or later**. Download the [Android v0.3.6 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.2/OpenProxySetup-android-v0.3.6.apk) and open it on your phone to install or update the app.
 
 ### First deployment
 
@@ -27,13 +27,17 @@ Requires **Android 8.0 or later**. Download the [Android v0.3.5 APK](https://git
 
 ### Manage an existing site
 
-On the home screen, choose **管理已有站点** (Manage an existing site). Enter the domain or HTTPS address to open `/admin` in your browser. You can also enter and copy your administrator password for sign-in.
+Windows and Android can open `/admin` inside the app with matching light and dark colors. Enter the site URL and password, enable “Remember this site and password,” and choose “Save site” or “Open dashboard in app.” The app restores them at the next launch, fills the first login form, and reuses an unexpired login session. Successful deployments also save the site automatically.
+
+Credentials are encrypted locally using Windows DPAPI for the current user or Android Keystore with AES-GCM. Disable remembering to remove the saved credentials, or use “Clear local site and login session” to remove the URL, password, and browser session. Changing the site domain clears the password input. Cloudflare and DNSHE API credentials are excluded from this feature. The embedded dashboard retains its settings, node, and subscription features, with refresh and external-browser controls.
+
+The Windows embedded dashboard requires Microsoft Edge WebView2 Runtime, normally included with Windows 11. If it is missing, install it from [Microsoft](https://developer.microsoft.com/microsoft-edge/webview2/) and reopen the dashboard.
 
 ## Install and use on Windows
 
-The home screen shows a legal notice and offers direct access to the admin dashboard. After deployment, the app fills in the site address and administrator password. For an existing site, enter them manually. Sign in to the dashboard in your browser. The password remains in the current app window and can be copied or cleared.
+The home screen shows a legal notice and offers direct access to the admin dashboard. After deployment, the app fills in the site address and administrator password. For an existing site, enter them manually. Open the dashboard in the app and optionally remember its URL and password with local encryption. Saved credentials and login sessions can be cleared.
 
-1. Download the [Windows x64 installer](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.1/OpenProxySetup-windows-x64-setup.exe), double-click it, and select an installation location. Setup creates a `自建机场` folder and opens the wizard. To reopen the app, double-click `OpenProxySetup.exe` in that folder.
+1. Download the [Windows x64 installer](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.2/OpenProxySetup-windows-x64-setup.exe), double-click it, and select an installation location. Setup creates a `自建机场` folder and opens the wizard. To reopen the app, double-click `OpenProxySetup.exe` in that folder.
 2. In step 1, select “开始 Cloudflare 授权” (Start Cloudflare authorization), sign up for or sign in to [Cloudflare](https://dash.cloudflare.com/sign-up) in your browser, and complete authorization. Return to the wizard and select “我已完成授权，继续” (I’ve authorized, continue). Once authorization is confirmed, obtain a domain from [DNSHE](https://my.dnshe.com/) in step 2 and create an API Key and API Secret under Domain Management → API Management in step 3. Enter your Cloudflare credentials on the Cloudflare website.
 3. Enter the DNSHE domain, API Key, API Secret, and an administrator password of at least 12 characters. Start deployment. The app creates KV, Pages, and the secret, deploys the site, requests the custom domain binding in Pages, and uses the DNSHE API to add a CNAME pointing to `pages.dev`. Existing conflicting DNS records are preserved.
 4. When deployment succeeds, open the displayed admin address and sign in with the password you set. Copy a node or subscription link from the dashboard and import it into a compatible client. Available formats depend on the upstream version used for deployment. Use the displayed `pages.dev` address while the custom domain is taking effect.
@@ -65,7 +69,7 @@ The platform and client list follows the [upstream edgetunnel documentation](htt
 
 Extract the entire `OpenProxySetup-windows-x64-portable.zip` archive and double-click `OpenProxySetup.exe`. Keep the EXE, `runtime`, `vendor`, and scripts in the same directory. The app uses Windows’ .NET Framework and Windows PowerShell 5.1. If it fails to launch, run `启动应用.cmd` to see the error.
 
-You can also download the [v1.4.1 CMD edition](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.1/OpenProxySetup-windows-x64-cmd-v1.4.1.zip). Extract the entire ZIP and double-click `OpenProxySetup.cmd`.
+You can also download the [v1.4.2 CMD edition](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.2/OpenProxySetup-windows-x64-cmd-v1.4.2.zip). Extract the entire ZIP and double-click `OpenProxySetup.cmd`.
 
 ## Packaging for maintainers
 

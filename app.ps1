@@ -1,12 +1,14 @@
 ﻿# Windows PowerShell 5.1 desktop wizard. Keep this file UTF-8 with BOM.
 $ErrorActionPreference = 'Stop'
-$script:appVersion = '1.4.1'
+$script:appVersion = '1.4.2'
 $deployScript = Join-Path $PSScriptRoot 'deploy.ps1'
 $bundledNode = Join-Path $PSScriptRoot 'runtime\node.exe'
 $bundledWrangler = Join-Path $PSScriptRoot 'runtime\node_modules\wrangler\bin\wrangler.js'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 . (Join-Path $PSScriptRoot 'readme-view.ps1')
+. (Join-Path $PSScriptRoot 'site-store.ps1')
+. (Join-Path $PSScriptRoot 'site-browser.ps1')
 
 Add-Type -ReferencedAssemblies System.Windows.Forms,System.Drawing -TypeDefinition @'
 using System;
@@ -360,6 +362,7 @@ function Set-Appearance([string]$mode, [switch]$Save) {
     }
     $form.Invalidate($true)
     if ($script:readmeData) { Show-Readme -KeepPosition }
+    if ($script:siteBrowser) { $script:siteBrowser.SetTheme($mode -eq 'dark') }
     if ($Save) {
         try {
             [void][IO.Directory]::CreateDirectory((Split-Path -Parent $themeFile))
@@ -437,7 +440,19 @@ function Add-Link($parent,[string]$value,[string]$url,[int]$x,[int]$y,[int]$widt
     $link.VisitedLinkColor = $theme.Blue
     $link.LinkBehavior = 'HoverUnderline'
     $link.Tag = $url
-    $link.add_LinkClicked({ if ($this.Tag) { Start-Process -FilePath $this.Tag } })
+    $link.add_LinkClicked({
+        if ($this.Tag) {
+            if ($this.AccessibleDescription -eq 'app-dashboard') {
+                try {
+                    Open-ManageBrowser
+                    $knownAddress = try { Get-AdminUrl $manageUrl.Text } catch { '' }
+                    $secret = if ($knownAddress -eq $this.Tag) { $managePassword.Text } else { '' }
+                    Show-WizardPage $browserPage
+                    $script:siteBrowser.Open([string]$this.Tag,$secret,($script:mode -eq 'dark'))
+                } catch { $manageStatus.Text = '后台暂时无法打开，请在后台管理页面重试。'; Show-WizardPage $managePage }
+            } else { Start-Process -FilePath $this.Tag }
+        }
+    })
     $parent.Controls.Add($link)
     return $link
 }
@@ -633,7 +648,7 @@ $viewport.add_Resize({ Fit-WizardPage $script:currentPage })
 function Update-PageActions {
     if (-not $script:currentPage) { return }
     $index = $script:pages.IndexOf($script:currentPage)
-    $reading = $script:currentPage -eq $readmePage
+    $reading = $script:currentPage -eq $readmePage -or $script:currentPage -eq $browserPage
     $previous.Text = if ($reading) { '返回' } else { '上一步' }
     $previous.Enabled = $reading -or ($index -gt 0 -and $index -le $script:guidesEnd)
     $previous.Left = if ($reading) { $next.Left } else { $next.Left - $form.DisplayPixels(150) }
@@ -976,9 +991,9 @@ $deployHint.Anchor = 'Top,Left,Right'
 
 $managePage = New-WizardPage
 Add-WizardPage $managePage '后台管理' 97
-$manageCard = Add-Card $managePage 29 17 796 423 $theme.Surface
+$manageCard = Add-Card $managePage 29 17 796 470 $theme.Surface
 $manageCard.Anchor = 'Top,Left,Right'
-$managePage.Tag = @{ Panel=$manageCard; Height=423; Top=17 }
+$managePage.Tag = @{ Panel=$manageCard; Height=470; Top=17 }
 [void](Add-Heading $manageCard '站点后台' 26 20 730 42)
 [void](Add-Text $manageCard '站点网址' 30 90 110 30)
 $manageUrl = New-Object Windows.Forms.TextBox
@@ -1000,8 +1015,25 @@ $managePassword.BorderStyle = 'FixedSingle'
 $managePassword.BackColor = $theme.Surface
 $managePassword.ForeColor = $theme.Ink
 $manageCard.Controls.Add($managePassword)
-[void](Add-Text $manageCard '密码仅保留在本次打开的窗口内。打开后台后，在浏览器中登录。' 150 215 585 46)
-$manageStatus = Add-Text $manageCard '' 150 338 585 100
+[void](Add-Text $manageCard '在应用内管理站点，配色跟随日间与暗夜模式。登录会话保留在本机。' 150 215 585 32)
+$rememberSite = New-Object Windows.Forms.CheckBox
+$rememberSite.Text = '记住此站点和密码（本机加密）'
+$rememberSite.Bounds = New-Object Drawing.Rectangle(150,248,585,30)
+$rememberSite.ForeColor = $theme.Ink
+$rememberSite.Checked = Get-RememberSite
+$manageCard.Controls.Add($rememberSite)
+$manageStatus = Add-Text $manageCard '' 150 410 585 40
+try {
+    $savedSite = Read-SavedSite
+    if ($savedSite) { $manageUrl.Text = $savedSite.url; $managePassword.Text = $savedSite.password }
+} catch { $manageStatus.Text = '保存的站点无法解密，请重新输入并保存，或清除本机记录。' }
+$savedSite = $null
+$rememberSite.add_CheckedChanged({
+    try {
+        Set-RememberSite $this.Checked
+        if (-not $this.Checked) { $manageStatus.Text = '已停止保存，并移除本机保存的网址和密码。' }
+    } catch { $manageStatus.Text = '保存设置失败，请重试。' }
+})
 
 function Get-AdminUrl([string]$value) {
     $value = $value.Trim()
@@ -1015,23 +1047,67 @@ function Get-AdminUrl([string]$value) {
     return ($uri.GetLeftPart([UriPartial]::Authority) + '/admin')
 }
 
-Add-Action $manageCard '打开后台' 150 275 145 {
+function Save-ManageSite {
+    $address = Get-AdminUrl $manageUrl.Text
+    if ($rememberSite.Checked) { Save-SavedSite $address $managePassword.Text }
+    else { Remove-SavedSite }
+    return $address
+}
+$script:lastManageAddress = try { Get-AdminUrl $manageUrl.Text } catch { '' }
+$manageUrl.add_TextChanged({
+    $address = try { Get-AdminUrl $manageUrl.Text } catch { '' }
+    if ($address -ne $script:lastManageAddress) { $managePassword.Clear() }
+    $script:lastManageAddress = $address
+})
+function Open-ManageBrowser {
+    if (-not $script:siteBrowser) {
+        $script:siteBrowser = New-SiteBrowser
+        $browserPage.Controls.Add($script:siteBrowser)
+        $script:siteBrowser.add_ReturnRequested({ Show-WizardPage $managePage })
+        $script:siteBrowser.add_ForgetCompleted({
+            $manageStatus.Text = if ($script:siteBrowser.LastForgetSucceeded) { '本机站点、密码与登录会话已清除。' } else { '会话清除失败，请重新打开后台后重试。' }
+        })
+    }
+}
+Add-Action $manageCard '在应用内打开后台' 150 292 220 {
     try {
-        Start-Process -FilePath (Get-AdminUrl $manageUrl.Text)
-        $manageStatus.Text = '已打开后台，请在浏览器登录。'
+        $address = Save-ManageSite
+        Open-ManageBrowser
+        Show-WizardPage $browserPage
+        $script:siteBrowser.Open($address,$managePassword.Text,($script:mode -eq 'dark'))
+        $manageStatus.Text = '后台已在应用内打开。'
     } catch { $manageStatus.Text = $_.Exception.Message }
 } $true
-Add-Action $manageCard '复制密码' 310 275 145 {
+Add-Action $manageCard '保存站点' 390 292 145 {
+    try {
+        if (-not $rememberSite.Checked) { $manageStatus.Text = '请先开启记住此站点。'; return }
+        [void](Save-ManageSite)
+        $manageStatus.Text = '网址和密码已加密保存，下次打开自动恢复。'
+    } catch { $manageStatus.Text = '保存失败，请检查网址及设备存储后重试。' }
+}
+Add-Action $manageCard '复制密码' 550 292 145 {
     if (-not $managePassword.Text) { $manageStatus.Text = '请先输入后台密码。'; return }
     try {
         [Windows.Forms.Clipboard]::SetText($managePassword.Text)
         $manageStatus.Text = '密码已复制，可在后台登录框粘贴。'
     } catch { $manageStatus.Text = '暂时无法访问剪贴板，请重试。' }
 }
-Add-Action $manageCard '清空密码' 470 275 145 {
+Add-Action $manageCard '清空输入' 150 351 145 {
     $managePassword.Clear()
     $manageStatus.Text = '密码输入框已清空。'
 }
+Add-Action $manageCard '清除本机站点与登录会话' 310 351 385 {
+    if ([Windows.Forms.MessageBox]::Show($form,'清除保存的网址、密码以及内置后台的登录会话？','Open Proxy Setup','OKCancel','Question') -ne 'OK') { return }
+    try {
+        Remove-SavedSite
+        $manageUrl.Clear(); $managePassword.Clear()
+        $manageStatus.Text = '正在清除本机登录会话…'
+        Open-ManageBrowser
+        $script:siteBrowser.Forget()
+    } catch { $manageStatus.Text = '清除失败，请重试。' }
+}
+$browserPage = New-WizardPage
+Add-WizardPage $browserPage '' 0
 
 $progressPage = New-WizardPage
 Add-WizardPage $progressPage '部署进度' 97
@@ -1065,6 +1141,7 @@ $result = Add-Link $progressCard '打开临时后台（pages.dev）' '' 30 340
 $customResult = Add-Link $progressCard '打开自定义域名后台' '' 30 373
 foreach ($link in @($result,$customResult)) {
     $link.Visible = $false
+    $link.AccessibleDescription = 'app-dashboard'
 }
 $retry = New-Object Windows.Forms.Button
 $retry.Location = New-Object Drawing.Point(30,420)
@@ -1195,6 +1272,7 @@ Set-ButtonStyle $previous
 $previous.Anchor = 'Top,Right'
 $previous.add_Click({
     if ($script:currentPage -eq $readmePage) { Show-WizardPage $script:readmeReturnPage }
+    elseif ($script:currentPage -eq $browserPage) { Show-WizardPage $managePage }
     else { Show-WizardPage $script:pages[($script:pages.IndexOf($script:currentPage) - 1)] }
 })
 $footer.Controls.Add($previous)
@@ -1246,11 +1324,19 @@ function Show-DeploymentProgress {
         if ($script:runPassword) {
             $managePassword.Text = [System.Net.NetworkCredential]::new('', $script:runPassword).Password
         }
+        try { [void](Save-ManageSite) } catch { $manageStatus.Text = '部署已完成，但站点保存失败，请在后台管理页面重新保存。' }
         $password.Clear()
     }
     if ($state.DomainActive) {
         $customResult.Tag = "https://$($state.Domain)/admin"
         $customResult.Visible = $true
+        if ($manageUrl.Text -ne $customResult.Tag) {
+            $previousManagePassword = $managePassword.Text
+            $manageUrl.Text = $customResult.Tag
+            $managePassword.Text = $previousManagePassword
+            $previousManagePassword = $null
+            try { [void](Save-ManageSite) } catch { $manageStatus.Text = '请在后台管理页面重新保存站点。' }
+        }
     }
 }
 

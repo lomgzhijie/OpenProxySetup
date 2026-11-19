@@ -22,3 +22,9 @@ jobs:
               [void][System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors)
               if ($errors) { throw "$($file.Name): $errors" }
           }
+      - name: Check encrypted site storage
+        shell: powershell
+        run: ./tests/site-store.tests.ps1
+      - name: Check embedded dashboard theme scope
+        shell: powershell
+        run: node ./tests/admin-theme.test.cjs

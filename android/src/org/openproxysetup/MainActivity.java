@@ -31,6 +31,7 @@ import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -71,6 +72,7 @@ public final class MainActivity extends Activity {
     private ScrollView scroll;
     private TextView status, elapsed;
     private Button recheckButton;
+    private EditText managePasswordField;
     private int screen = HOME, docReturn = HOME, manageReturn = HOME, docLanguage, phase, completedPhase, failedPhase;
     private long phaseStarted, runStarted, waitStarted, totalTime;
     private boolean resumed;
@@ -79,6 +81,8 @@ public final class MainActivity extends Activity {
     private String account = "", token = "", verifiedAccount = "", verifiedToken = "";
     private String domain = "", key = "", secret = "", password = "", submittedPassword = "", boundDomain = "";
     private String manageUrl = "", managePassword = "", progressMessage = "";
+    private boolean rememberSite = true;
+    private String savedSiteError = "";
     private Deployment deployment;
     private boolean updateChecking;
     private UpdateChecker availableUpdate;
@@ -90,6 +94,13 @@ public final class MainActivity extends Activity {
                 == Configuration.UI_MODE_NIGHT_YES;
         dark = getPreferences(MODE_PRIVATE).getBoolean("dark", systemDark);
         docLanguage = getPreferences(MODE_PRIVATE).getInt("docLanguage", 0);
+        rememberSite = getPreferences(MODE_PRIVATE).getBoolean("rememberSite", true);
+        try {
+            org.json.JSONObject saved = SavedSite.read(this);
+            if (saved != null) {
+                manageUrl = saved.optString("url"); managePassword = saved.optString("password");
+            }
+        } catch (Exception e) { savedSiteError = "保存的站点无法解密，请重新输入并保存，或清除本机记录。"; }
         render(HOME);
         handler.post(() -> checkForUpdates(false));
     }
@@ -97,6 +108,8 @@ public final class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        boolean selectedDark = getPreferences(MODE_PRIVATE).getBoolean("dark", dark);
+        if (selectedDark != dark) { dark = selectedDark; render(screen); }
         resumed = true;
         tick();
         showAvailableUpdate();
@@ -450,6 +463,7 @@ public final class MainActivity extends Activity {
                     pagesReady = true;
                     manageUrl = "https://" + current.pagesHost() + "/admin";
                     managePassword = admin;
+                    saveSite(false);
                     submittedPassword = "";
                     setPhase(0);
                     completedPhase = 3;
@@ -515,6 +529,7 @@ public final class MainActivity extends Activity {
         if (active) {
             completedPhase = 4;
             manageUrl = "https://" + boundDomain + "/admin";
+            saveSite(false);
         }
         progressMessage = detail;
         render(PROGRESS);
@@ -541,11 +556,11 @@ public final class MainActivity extends Activity {
         if (pagesReady) {
             card();
             title("站点后台");
-            Button pages = action("打开 Pages 后台 ↗", !domainActive, null);
+            Button pages = action("打开 Pages 后台", !domainActive, null);
             pages.setTag("availableDuringDeployment");
-            pages.setOnClickListener(view -> open("https://" + deployment.pagesHost() + "/admin"));
+            pages.setOnClickListener(view -> openDashboard("https://" + deployment.pagesHost() + "/admin"));
             append(section, pages, 9);
-            if (domainActive) button("打开自定义域名后台 ↗", true, () -> open("https://" + boundDomain + "/admin"));
+            if (domainActive) button("打开自定义域名后台", true, () -> openDashboard("https://" + boundDomain + "/admin"));
             button("进入后台管理", false, () -> openManage(PROGRESS));
         }
         if (!busy) {
@@ -622,14 +637,36 @@ public final class MainActivity extends Activity {
     private void manage() {
         card();
         heading("站点后台");
-        copy("打开 /admin 后在浏览器登录。输入的密码仅保留在本次打开的应用中。");
-        field("站点网址", "域名或 HTTPS 网址", manageUrl, false, v -> manageUrl = v.trim());
+        copy("在应用内管理站点，后台跟随日间与暗夜模式。开启记住后，网址和密码加密保存在本机，下次打开自动恢复。");
+        field("站点网址", "域名或 HTTPS 网址", manageUrl, false, v -> {
+            if (!java.util.Objects.equals(adminUrl(manageUrl), adminUrl(v.trim())) && !managePassword.isEmpty()) {
+                managePassword = "";
+                if (managePasswordField != null) managePasswordField.setText("");
+            }
+            manageUrl = v.trim();
+        });
         EditText admin = field("后台密码", "输入部署时设置的密码", managePassword, true, v -> managePassword = v);
-        button("打开后台 ↗", true, () -> {
+        managePasswordField = admin;
+        CheckBox remember = new CheckBox(this);
+        remember.setText("记住此站点和密码（本机加密）"); remember.setTextColor(ink);
+        remember.setButtonTintList(ColorStateList.valueOf(accent)); remember.setChecked(rememberSite);
+        remember.setOnCheckedChangeListener((v, checked) -> {
+            rememberSite = checked;
+            getPreferences(MODE_PRIVATE).edit().putBoolean("rememberSite", checked).apply();
+            if (!checked) {
+                try { SavedSite.clear(this); message("已停止保存并移除本机保存的网址和密码。"); }
+                catch (Exception e) { message("清除失败，请重试。"); }
+            }
+        });
+        append(section, remember, 8);
+        button("在应用内打开后台", true, () -> {
             String address = adminUrl(manageUrl);
             if (address == null) message("请输入有效的 HTTPS 网址或域名。");
-            else open(address);
+            else if (saveSite(true)) {
+                openDashboard(address);
+            }
         });
+        button("保存站点", false, () -> { if (saveSite(true)) message(rememberSite ? "网址和密码已加密保存。" : "请先开启记住此站点。"); });
         LinearLayout controls = row();
         addHalf(controls, action("复制密码", false, () -> {
             if (managePassword.isEmpty()) {
@@ -650,8 +687,43 @@ public final class MainActivity extends Activity {
             message("密码输入框已清空。");
         }));
         append(section, controls, 8);
+        button("清除本机站点与登录会话", false, () -> dialog().setTitle("清除本机记录？")
+                .setMessage("将清除保存的网址、密码以及内置后台的登录会话。")
+                .setPositiveButton("清除", (d, w) -> {
+                    try {
+                        SavedSite.clear(this); manageUrl = managePassword = savedSiteError = "";
+                        android.webkit.CookieManager.getInstance().removeAllCookies(ok -> {
+                            android.webkit.CookieManager.getInstance().flush();
+                            android.webkit.WebStorage.getInstance().deleteAllData();
+                            render(MANAGE); message("本机站点、密码与登录会话已清除。");
+                        });
+                    } catch (Exception e) { message("清除失败，请重试。"); }
+                }).setNegativeButton("取消", null).show());
         statusLine();
+        if (!savedSiteError.isEmpty()) message(savedSiteError);
         button("返回", false, () -> render(manageReturn));
+    }
+
+    private boolean saveSite(boolean notify) {
+        String address = adminUrl(manageUrl);
+        if (address == null) { if (notify) message("请输入有效的 HTTPS 网址或域名。"); return false; }
+        try {
+            if (rememberSite) SavedSite.save(this, address, managePassword);
+            else SavedSite.clear(this);
+            savedSiteError = ""; return true;
+        } catch (Exception e) {
+            savedSiteError = "站点保存失败，请检查设备存储后重试。";
+            if (notify) message(savedSiteError);
+            return false;
+        }
+    }
+
+    private void openDashboard(String address) {
+        String savedAddress = adminUrl(manageUrl);
+        Intent intent = new Intent(this, SiteBrowserActivity.class);
+        intent.putExtra("url", address).putExtra("dark", dark);
+        if (address.equals(savedAddress)) intent.putExtra("password", managePassword);
+        startActivity(intent);
     }
 
     private static String adminUrl(String input) {
