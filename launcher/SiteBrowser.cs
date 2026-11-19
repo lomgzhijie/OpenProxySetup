@@ -8,6 +8,12 @@ using System.Windows.Forms;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 
+public sealed class SiteValidationEventArgs : EventArgs {
+    public bool Success {get;private set;} public bool OpenRequested {get;private set;}
+    public string Url {get;private set;} public string Message {get;private set;}
+    public SiteValidationEventArgs(bool success,bool open,string url,string message) {Success=success;OpenRequested=open;Url=url;Message=message;}
+}
+
 public sealed class OpenProxySetupBrowser : UserControl
 {
     private readonly WebView2 web = new WebView2();
@@ -17,15 +23,19 @@ public sealed class OpenProxySetupBrowser : UserControl
     private readonly Panel fallback = new Panel();
     private readonly string template;
     private Uri site;
-    private string password = "", scriptId;
+    private string scriptId;
     private bool dark, initialized;
     private Task initializeTask;
+    private readonly Func<string,string,string,Task<string>> verifier;
     public event EventHandler ReturnRequested;
+    public event EventHandler<SiteValidationEventArgs> ValidationCompleted;
     public event EventHandler ForgetCompleted;
     public bool LastForgetSucceeded { get; private set; }
 
-    public OpenProxySetupBrowser(string root)
+    public OpenProxySetupBrowser(string root) : this(root,(url,secret,ua)=>OpenProxySetupSiteAuth.Verify(url,secret,ua)) {}
+    internal OpenProxySetupBrowser(string root,Func<string,string,string,Task<string>> verifier)
     {
+        this.verifier=verifier;
         template = File.ReadAllText(Path.Combine(root, "assets/admin-theme.js"));
         Dock = DockStyle.Fill;
         AutoScaleDimensions = new SizeF(96F, 96F); AutoScaleMode = AutoScaleMode.Dpi;
@@ -97,11 +107,6 @@ public sealed class OpenProxySetupBrowser : UserControl
         try {
             if (site == null || web.CoreWebView2 == null || !SameOrigin(web.CoreWebView2.Source, site.AbsoluteUri)) return;
             await web.ExecuteScriptAsync(ThemeScript());
-            if (password.Length > 0) await web.ExecuteScriptAsync(
-                "(()=>{if(window.top!==window||location.origin!==" + Quote(site.GetLeftPart(UriPartial.Authority)) +
-                "||location.pathname!='/login')return;const p=document.querySelector('#password');" +
-                "if(p&&p.type==='password'&&!p.value){p.value=" + Quote(password) +
-                ";p.dispatchEvent(new Event('input',{bubbles:true}));}})()");
         } catch { status.Text = "后台页面未就绪，可点击刷新重试。"; }
     }
     private Task Ready() { return initializeTask ?? (initializeTask = Initialize()); }
@@ -110,25 +115,34 @@ public sealed class OpenProxySetupBrowser : UserControl
         return template.Replace("__OPS_ORIGIN__", Quote(site.GetLeftPart(UriPartial.Authority)))
             .Replace("__OPS_DARK__", dark ? "true" : "false");
     }
-    public async void Open(string address, string secret, bool night)
+    public async void Open(string address, string secret, bool night, bool navigate=true)
     {
         try {
             Uri selected = new Uri(address);
             if (!SameOrigin(address, address)) throw new ArgumentException();
-            bool changed = site == null || site != selected;
-            site = selected; password = secret ?? ""; dark = night; ApplyColors();
-            status.Text = "正在打开站点后台…";
+            status.Text = "正在验证密码…";
             await Ready();
+            string value=await verifier(address,secret,web.CoreWebView2.Settings.UserAgent);
+            var cookie=web.CoreWebView2.CookieManager.CreateCookie("auth",value,selected.Host,"/");
+            cookie.IsSecure=true;cookie.IsHttpOnly=true;cookie.Expires=DateTime.Now.AddDays(1);
+            cookie.SameSite=CoreWebView2CookieSameSiteKind.Lax;
+            web.CoreWebView2.CookieManager.AddOrUpdateCookie(cookie);
+            bool changed = site == null || site != selected;
+            site = selected; dark = night; ApplyColors();
+            if(ValidationCompleted!=null)ValidationCompleted(this,new SiteValidationEventArgs(true,navigate,address,"密码验证成功。"));
+            if(!navigate)return;
             fallback.Visible = false;
             if (scriptId != null) web.CoreWebView2.RemoveScriptToExecuteOnDocumentCreated(scriptId);
             scriptId = await web.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(ThemeScript());
             if (changed || web.Source == null || !SameOrigin(web.Source.AbsoluteUri, site.AbsoluteUri)
                 || web.Source.AbsolutePath == "/login") web.Source = site;
             else { await web.ExecuteScriptAsync(ThemeScript()); status.Text = site.Host + " · 登录会话保留在本机"; }
-        } catch {
-            status.Text = "内置后台无法启动。请安装 Microsoft Edge WebView2 Runtime 后重试，或在浏览器打开。";
-            fallback.BackColor = BackColor; fallback.ForeColor = bar.ForeColor;
-            fallback.Visible = true; fallback.BringToFront(); bar.BringToFront();
+        } catch (Exception error) {
+            string message=error is InvalidOperationException?error.Message:
+                error is TaskCanceledException?"验证超时，请检查网络后重试。":
+                initialized?"无法连接站点，请检查网络和 HTTPS 证书后重试。":"内置组件无法启动，请安装 WebView2 Runtime 后重试。";
+            status.Text=message;
+            if(ValidationCompleted!=null)ValidationCompleted(this,new SiteValidationEventArgs(false,navigate,address,message));
         }
     }
     public async void SetTheme(bool night)
@@ -144,7 +158,6 @@ public sealed class OpenProxySetupBrowser : UserControl
     }
     public async void Forget()
     {
-        password = "";
         LastForgetSucceeded = false;
         try {
             await Ready(); web.Stop();
@@ -156,6 +169,13 @@ public sealed class OpenProxySetupBrowser : UserControl
             if (site != null) web.Reload();
         } catch { status.Text = "会话清除失败，请重新打开后台后重试。"; }
         if (ForgetCompleted != null) ForgetCompleted(this, EventArgs.Empty);
+    }
+    public async void ForgetSite(string address) {
+        try {
+            await Ready();var uri=new Uri(address);
+            web.CoreWebView2.CookieManager.DeleteCookiesWithDomainAndPath("auth",uri.Host,"/");
+            if(site!=null&&SameOrigin(site.AbsoluteUri,address))web.Reload();
+        }catch{status.Text="站点登录会话清除失败，请重试。";}
     }
     private void ApplyColors()
     {
@@ -178,7 +198,7 @@ public sealed class OpenProxySetupBrowser : UserControl
     }
     protected override void Dispose(bool disposing)
     {
-        if (disposing) { password = ""; web.Dispose(); }
+        if (disposing) web.Dispose();
         base.Dispose(disposing);
     }
 }

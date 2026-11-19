@@ -51,7 +51,7 @@ import java.util.regex.Pattern;
 
 public final class MainActivity extends Activity {
     private static final int HOME = 0, AUTH = 1, DOMAIN = 2, DNSHE = 3, DEPLOY = 4, PROGRESS = 5, MANAGE = 6, DOCS = 7;
-    private static final int CLOUDFLARE_GUIDE = 8, DNSHE_GUIDE = 9;
+    private static final int CLOUDFLARE_GUIDE = 8, DNSHE_GUIDE = 9, SITE_EDIT = 10;
     private static final String SITE = "https://openproxysetup.ccwu.cc/";
     private static final String CLOUDFLARE = "https://dash.cloudflare.com/";
     private static final String DNSHE_SITE = "https://my.dnshe.com/";
@@ -81,7 +81,10 @@ public final class MainActivity extends Activity {
     private String account = "", token = "", verifiedAccount = "", verifiedToken = "";
     private String domain = "", key = "", secret = "", password = "", submittedPassword = "", boundDomain = "";
     private String manageUrl = "", managePassword = "", progressMessage = "";
-    private boolean rememberSite = true;
+    private boolean managementMode, siteVerifying;
+    private int deploymentScreen = HOME;
+    private int siteValidationRevision;
+    private String editingSite = "", deployedPassword = "", deployedManagementUrl = "";
     private String savedSiteError = "";
     private Deployment deployment;
     private boolean updateChecking;
@@ -94,14 +97,9 @@ public final class MainActivity extends Activity {
                 == Configuration.UI_MODE_NIGHT_YES;
         dark = getPreferences(MODE_PRIVATE).getBoolean("dark", systemDark);
         docLanguage = getPreferences(MODE_PRIVATE).getInt("docLanguage", 0);
-        rememberSite = getPreferences(MODE_PRIVATE).getBoolean("rememberSite", true);
-        try {
-            org.json.JSONObject saved = SavedSite.read(this);
-            if (saved != null) {
-                manageUrl = saved.optString("url"); managePassword = saved.optString("password");
-            }
-        } catch (Exception e) { savedSiteError = "保存的站点无法解密，请重新输入并保存，或清除本机记录。"; }
-        render(HOME);
+        try { SavedSite.all(this); }
+        catch (Exception e) { savedSiteError = "保存的站点无法解密，请清除本机记录后重新添加。"; }
+        render(getPreferences(MODE_PRIVATE).getBoolean("managementMode", false) ? MANAGE : HOME);
         handler.post(() -> checkForUpdates(false));
     }
 
@@ -123,6 +121,9 @@ public final class MainActivity extends Activity {
     }
 
     private void render(int destination) {
+        if (destination == MANAGE || destination == SITE_EDIT) managementMode = true;
+        else if (destination != DOCS) { managementMode = false; deploymentScreen = destination; }
+        getPreferences(MODE_PRIVATE).edit().putBoolean("managementMode", managementMode).apply();
         screen = destination;
         colors();
         status = null;
@@ -147,6 +148,8 @@ public final class MainActivity extends Activity {
         scroll.addView(body);
         setContentView(shell);
         shell.post(() -> {
+            getWindow().getDecorView().setSystemUiVisibility(dark ? 0 :
+                    View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
             if (Build.VERSION.SDK_INT >= 30) {
                 WindowInsetsController bars = getWindow().getInsetsController();
                 if (bars == null) return;
@@ -166,12 +169,13 @@ public final class MainActivity extends Activity {
             case DEPLOY: deployForm(); break;
             case PROGRESS: progress(); break;
             case MANAGE: manage(); break;
+            case SITE_EDIT: siteEditor(); break;
             case DOCS: documentation(); break;
             case CLOUDFLARE_GUIDE: cloudflareGuide(); break;
             case DNSHE_GUIDE: dnsheMobileGuide(); break;
             default: home();
         }
-        updateControls(shell, !busy);
+        updateControls(shell, !siteVerifying && (!busy || managementMode));
         tick();
     }
 
@@ -195,6 +199,12 @@ public final class MainActivity extends Activity {
         });
         theme.setContentDescription(dark ? "切换至日间模式" : "切换至暗夜模式");
         bar.addView(theme, new LinearLayout.LayoutParams(dp(49), dp(48)));
+        Button mode = action(managementMode ? "部署" : "管理", false, null);
+        mode.setContentDescription(managementMode ? "切换至部署页面" : "切换至管理页面");
+        mode.setTag("availableDuringDeployment");
+        mode.setOnClickListener(v -> { if (!siteVerifying) render(managementMode ? deploymentScreen : MANAGE); });
+        LinearLayout.LayoutParams modeSpace = new LinearLayout.LayoutParams(dp(53), dp(48));
+        modeSpace.leftMargin = dp(6); bar.addView(mode, modeSpace);
         if (screen != DOCS) {
             Button docs = action("文档", false, () -> {
                 docReturn = screen;
@@ -228,7 +238,6 @@ public final class MainActivity extends Activity {
         copy("在手机上完成 Cloudflare 授权、DNSHE 域名配置和站点部署。");
         button(runAttempted ? "查看本次部署  →" : "开始部署  →", true,
                 () -> render(runAttempted ? PROGRESS : AUTH));
-        button("管理已有站点", false, () -> openManage(HOME));
         card();
         title("部署流程");
         guideLine("1", "授权 Cloudflare", "连接你自己的账号");
@@ -277,7 +286,7 @@ public final class MainActivity extends Activity {
     }
 
     private void showAvailableUpdate() {
-        if (!resumed || busy || availableUpdate == null || isFinishing() || isDestroyed()) return;
+        if (!resumed || busy || siteVerifying || availableUpdate == null || isFinishing() || isDestroyed()) return;
         UpdateChecker update = availableUpdate;
         availableUpdate = null;
         dialog().setTitle("发现新版本 v" + update.version)
@@ -461,13 +470,12 @@ public final class MainActivity extends Activity {
                 current.deploy(credential, admin, stage -> runOnUiThread(() -> setPhase(stage)));
                 runOnUiThread(() -> {
                     pagesReady = true;
-                    manageUrl = "https://" + current.pagesHost() + "/admin";
-                    managePassword = admin;
-                    saveSite(false);
+                    deployedPassword = admin;
+                    rememberDeploymentSite("https://" + current.pagesHost() + "/admin");
                     submittedPassword = "";
                     setPhase(0);
                     completedPhase = 3;
-                    render(PROGRESS);
+                    if (!managementMode) render(PROGRESS);
                 });
             }
             if (withDomain) {
@@ -528,11 +536,10 @@ public final class MainActivity extends Activity {
         domainActive = active;
         if (active) {
             completedPhase = 4;
-            manageUrl = "https://" + boundDomain + "/admin";
-            saveSite(false);
+            rememberDeploymentSite("https://" + boundDomain + "/admin");
         }
         progressMessage = detail;
-        render(PROGRESS);
+        if (!managementMode) render(PROGRESS);
     }
 
     private void progress() {
@@ -622,6 +629,7 @@ public final class MainActivity extends Activity {
                     deployment = null;
                     pagesReady = domainActive = pending = runAttempted = false;
                     progressMessage = submittedPassword = boundDomain = password = "";
+                    deployedPassword = deployedManagementUrl = "";
                     failedPhase = completedPhase = phase = 0;
                     waitStarted = totalTime = 0;
                     java.util.Arrays.fill(phaseTimes, 0);
@@ -635,106 +643,141 @@ public final class MainActivity extends Activity {
     }
 
     private void manage() {
-        card();
-        heading("站点后台");
-        copy("在应用内管理站点，后台跟随日间与暗夜模式。开启记住后，网址和密码加密保存在本机，下次打开自动恢复。");
-        field("站点网址", "域名或 HTTPS 网址", manageUrl, false, v -> {
+        card(); heading("站点管理");
+        copy("已保存的站点 · 点击域名验证密码并进入后台。");
+        button("＋ 添加站点", true, () -> editSite(null));
+        try {
+            java.util.List<SavedSite.Site> sites = SavedSite.all(this);
+            if (sites.isEmpty()) copy("还没有保存的站点，添加一个即可开始管理。");
+            for (SavedSite.Site site : sites) {
+                card();
+                LinearLayout line = row();
+                Button name = action(SiteAuth.domain(site.url) + "  →", false,
+                        () -> verifySite(site.url, site.password, "", true));
+                name.setContentDescription("打开站点 " + SiteAuth.domain(site.url));
+                line.addView(name, new LinearLayout.LayoutParams(0, dp(54), 1));
+                Button menu = action("⋯", false, () -> dialog().setTitle(SiteAuth.domain(site.url))
+                    .setItems(new String[]{"编辑站点", "移除站点"}, (d, which) -> {
+                        if (which == 0) editSite(site); else removeSite(site);
+                    }).show());
+                LinearLayout.LayoutParams space = new LinearLayout.LayoutParams(dp(46), dp(54));
+                space.leftMargin = dp(6); line.addView(menu, space); append(section, line, 0);
+            }
+        } catch (Exception e) { savedSiteError = "保存的站点无法解密，请清除本机记录后重新添加。"; }
+        card(); statusLine();
+        if (!savedSiteError.isEmpty()) message(savedSiteError);
+        button("清除全部本机站点与登录会话", false, () -> dialog().setTitle("清除全部本机记录？")
+            .setMessage("将移除全部保存的站点、密码和内置后台登录状态。")
+            .setPositiveButton("清除", (d, w) -> {
+                try {
+                    SavedSite.clear(this); manageUrl = managePassword = savedSiteError = editingSite = "";
+                    android.webkit.CookieManager.getInstance().removeAllCookies(ok -> {
+                        android.webkit.CookieManager.getInstance().flush();
+                        android.webkit.WebStorage.getInstance().deleteAllData();
+                        render(MANAGE); message("全部本机站点和登录会话已清除。");
+                    });
+                } catch (Exception e) { message("清除失败，请重试。"); }
+            }).setNegativeButton("取消", null).show());
+    }
+
+    private void editSite(SavedSite.Site site) {
+        editingSite = site == null ? "" : site.url;
+        manageUrl = site == null ? "" : SiteAuth.domain(site.url);
+        managePassword = site == null ? "" : site.password;
+        render(SITE_EDIT);
+    }
+
+    private void siteEditor() {
+        card(); heading(editingSite.isEmpty() ? "添加站点" : "编辑站点");
+        copy("密码验证成功后才保存。网址和密码加密保存在本机。");
+        managePasswordField = null;
+        field("站点域名", "例如 example.pages.dev", manageUrl, false, v -> {
             if (!java.util.Objects.equals(adminUrl(manageUrl), adminUrl(v.trim())) && !managePassword.isEmpty()) {
                 managePassword = "";
                 if (managePasswordField != null) managePasswordField.setText("");
             }
             manageUrl = v.trim();
         });
-        EditText admin = field("后台密码", "输入部署时设置的密码", managePassword, true, v -> managePassword = v);
-        managePasswordField = admin;
-        CheckBox remember = new CheckBox(this);
-        remember.setText("记住此站点和密码（本机加密）"); remember.setTextColor(ink);
-        remember.setButtonTintList(ColorStateList.valueOf(accent)); remember.setChecked(rememberSite);
-        remember.setOnCheckedChangeListener((v, checked) -> {
-            rememberSite = checked;
-            getPreferences(MODE_PRIVATE).edit().putBoolean("rememberSite", checked).apply();
-            if (!checked) {
-                try { SavedSite.clear(this); message("已停止保存并移除本机保存的网址和密码。"); }
-                catch (Exception e) { message("清除失败，请重试。"); }
-            }
-        });
-        append(section, remember, 8);
-        button("在应用内打开后台", true, () -> {
-            String address = adminUrl(manageUrl);
-            if (address == null) message("请输入有效的 HTTPS 网址或域名。");
-            else if (saveSite(true)) {
-                openDashboard(address);
-            }
-        });
-        button("保存站点", false, () -> { if (saveSite(true)) message(rememberSite ? "网址和密码已加密保存。" : "请先开启记住此站点。"); });
-        LinearLayout controls = row();
-        addHalf(controls, action("复制密码", false, () -> {
-            if (managePassword.isEmpty()) {
-                message("请先输入后台密码。");
-                return;
-            }
-            ClipData clip = ClipData.newPlainText("后台密码", managePassword);
-            if (Build.VERSION.SDK_INT >= 33) {
-                PersistableBundle extras = new PersistableBundle();
-                extras.putBoolean("android.content.extra.IS_SENSITIVE", true);
-                clip.getDescription().setExtras(extras);
-            }
-            getSystemService(ClipboardManager.class).setPrimaryClip(clip);
-            message("密码已复制，在后台登录框粘贴即可。");
-        }));
-        addHalf(controls, action("清空密码", false, () -> {
-            admin.setText("");
-            message("密码输入框已清空。");
-        }));
-        append(section, controls, 8);
-        button("清除本机站点与登录会话", false, () -> dialog().setTitle("清除本机记录？")
-                .setMessage("将清除保存的网址、密码以及内置后台的登录会话。")
-                .setPositiveButton("清除", (d, w) -> {
-                    try {
-                        SavedSite.clear(this); manageUrl = managePassword = savedSiteError = "";
-                        android.webkit.CookieManager.getInstance().removeAllCookies(ok -> {
-                            android.webkit.CookieManager.getInstance().flush();
-                            android.webkit.WebStorage.getInstance().deleteAllData();
-                            render(MANAGE); message("本机站点、密码与登录会话已清除。");
-                        });
-                    } catch (Exception e) { message("清除失败，请重试。"); }
-                }).setNegativeButton("取消", null).show());
+        managePasswordField = field("后台密码", "输入部署时设置的密码", managePassword, true, v -> managePassword = v);
+        button("验证并打开后台", true, () -> verifySite(manageUrl, managePassword, editingSite, true));
+        button("验证并保存", false, () -> verifySite(manageUrl, managePassword, editingSite, false));
         statusLine();
-        if (!savedSiteError.isEmpty()) message(savedSiteError);
-        button("返回", false, () -> render(manageReturn));
+        button("返回站点列表", false, () -> render(MANAGE));
     }
 
-    private boolean saveSite(boolean notify) {
-        String address = adminUrl(manageUrl);
-        if (address == null) { if (notify) message("请输入有效的 HTTPS 网址或域名。"); return false; }
+    private void removeSite(SavedSite.Site site) {
+        dialog().setTitle("移除站点？").setMessage(SiteAuth.domain(site.url))
+            .setPositiveButton("移除", (d,w) -> {
+                try {
+                    SavedSite.remove(this,site.url);
+                    android.webkit.CookieManager.getInstance().setCookie(SiteAuth.origin(site.url),
+                        "auth=; Path=/; Max-Age=0; Secure; HttpOnly", ok -> android.webkit.CookieManager.getInstance().flush());
+                    render(MANAGE); message("已移除该站点及其登录会话。");
+                } catch (Exception e) { message("移除失败，请重试。"); }
+            }).setNegativeButton("取消",null).show();
+    }
+
+    private void rememberDeploymentSite(String address) {
         try {
-            if (rememberSite) SavedSite.save(this, address, managePassword);
-            else SavedSite.clear(this);
-            savedSiteError = ""; return true;
-        } catch (Exception e) {
-            savedSiteError = "站点保存失败，请检查设备存储后重试。";
-            if (notify) message(savedSiteError);
-            return false;
-        }
+            SavedSite.save(this,address,deployedPassword,deployedManagementUrl);
+            deployedManagementUrl=address;
+        } catch (Exception e) { savedSiteError="部署完成，但站点未保存，请在管理页面手动添加。"; }
+    }
+
+    private void verifySite(String input,String password,String previous,boolean open) {
+        if(siteVerifying)return;
+        final String address=adminUrl(input);
+        if(address==null||password.isEmpty()){message("请输入有效的站点域名和后台密码。");return;}
+        final String ua;
+        try { ua=android.webkit.WebSettings.getDefaultUserAgent(this); }
+        catch (Exception e) {message("请先启用或更新 Android System WebView。");return;}
+        siteVerifying=true;updateControls(shell,false);message("正在验证密码…");
+        final int request=++siteValidationRevision;
+        new Thread(()->{
+            try {
+                String cookie=SiteAuth.verify(address,password,ua);
+                runOnUiThread(()->{
+                    if(isDestroyed()||isFinishing()||request!=siteValidationRevision)return;
+                    android.webkit.CookieManager.getInstance().setCookie(SiteAuth.origin(address),
+                        cookie+"; Path=/; Max-Age=86400; Secure; HttpOnly; SameSite=Lax",ok->{
+                            if(isDestroyed()||isFinishing()||request!=siteValidationRevision)return;
+                            siteVerifying=false;android.webkit.CookieManager.getInstance().flush();
+                            if(!ok){updateControls(shell,!busy||managementMode);message("密码正确，但登录会话未能写入，请重试。");return;}
+                            try { SavedSite.save(this,address,password,previous); savedSiteError=""; }
+                            catch (Exception e) {updateControls(shell,!busy||managementMode);message("验证成功，但保存失败，请检查设备存储后重试。");return;}
+                            render(MANAGE);message("密码验证成功，站点已保存。");
+                            if(open){
+                                Intent intent=new Intent(this,SiteBrowserActivity.class);
+                                intent.putExtra("url",address).putExtra("dark",dark).putExtra("userAgent",ua).putExtra("verified",true);
+                                startActivityForResult(intent,71);
+                            } else showAvailableUpdate();
+                        });
+                });
+            }catch(Exception error){
+                String detail=error instanceof java.net.UnknownHostException?"无法找到站点，请检查域名或网络。":
+                    error instanceof java.io.IOException?error.getMessage():"站点验证失败，请稍后重试。";
+                final String reason=detail==null?"站点验证失败，请检查网络后重试。":detail;
+                runOnUiThread(()->{if(isDestroyed()||isFinishing()||request!=siteValidationRevision)return;siteVerifying=false;
+                    updateControls(shell,!busy||managementMode);
+                    message(screen==MANAGE&&reason.startsWith("密码不正确")?reason+" 点 ⋯ 编辑站点更新密码。":reason);
+                    showAvailableUpdate();});
+            }
+        },"Site-password-verification").start();
     }
 
     private void openDashboard(String address) {
-        String savedAddress = adminUrl(manageUrl);
-        Intent intent = new Intent(this, SiteBrowserActivity.class);
-        intent.putExtra("url", address).putExtra("dark", dark);
-        if (address.equals(savedAddress)) intent.putExtra("password", managePassword);
-        startActivity(intent);
+        String secret=deployedPassword;
+        try {for(SavedSite.Site site:SavedSite.all(this))if(site.url.equals(address)){secret=site.password;break;}}
+        catch(Exception ignored){}
+        if(secret.isEmpty()) {editSite(null);manageUrl=SiteAuth.domain(address);render(SITE_EDIT);return;}
+        verifySite(address,secret,"",true);
     }
 
-    private static String adminUrl(String input) {
-        try {
-            String address = input.contains("://") ? input : "https://" + input;
-            URI parsed = new URI(address);
-            if (!"https".equalsIgnoreCase(parsed.getScheme()) || parsed.getHost() == null || parsed.getUserInfo() != null) return null;
-            return new URI("https", null, parsed.getHost(), parsed.getPort(), "/admin", null, null).toASCIIString();
-        } catch (java.net.URISyntaxException error) {
-            return null;
-        }
+    private static String adminUrl(String input) {return SiteAuth.adminUrl(input);}
+
+    @Override protected void onActivityResult(int request,int result,Intent data) {
+        super.onActivityResult(request,result,data);
+        if(request==71&&data!=null&&data.getBooleanExtra("deployment",false))render(deploymentScreen);
     }
 
     private void documentation() {
@@ -809,12 +852,17 @@ public final class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (busy) return;
+        if (siteVerifying) {
+            siteValidationRevision++; siteVerifying = false;
+            render(MANAGE); message("已取消验证。"); return;
+        }
+        if (busy && !managementMode) return;
         switch (screen) {
             case DOCS: render(docReturn); break;
             case CLOUDFLARE_GUIDE: render(AUTH); break;
             case DNSHE_GUIDE: render(DNSHE); break;
-            case MANAGE: render(manageReturn); break;
+            case SITE_EDIT: render(MANAGE); break;
+            case MANAGE: render(deploymentScreen); break;
             case PROGRESS: render(DEPLOY); break;
             case DEPLOY: render(DNSHE); break;
             case DNSHE: render(DOMAIN); break;
@@ -939,7 +987,7 @@ public final class MainActivity extends Activity {
         view.setPadding(dp(8), dp(7), dp(8), dp(7));
         view.setBackground(new RippleDrawable(ColorStateList.valueOf(0x316d8fed),
                 shape(main ? primary : panel, main ? primary : border, 11), null));
-        if (run != null) view.setOnClickListener(button -> { if (!busy) run.run(); });
+        if (run != null) view.setOnClickListener(button -> { if (!siteVerifying && (!busy || managementMode)) run.run(); });
         return view;
     }
 
@@ -970,7 +1018,7 @@ public final class MainActivity extends Activity {
                 runOnUiThread(() -> {
                     if (isDestroyed() || isFinishing()) return;
                     busy = false;
-                    updateControls(shell, true);
+                    updateControls(shell, !siteVerifying);
                     done.run();
                     showAvailableUpdate();
                 });
@@ -983,9 +1031,9 @@ public final class MainActivity extends Activity {
                         failedPhase = phase;
                         stopProgress();
                         progressMessage = reason;
-                        render(PROGRESS);
+                        if (!managementMode) render(PROGRESS);
                     } else {
-                        updateControls(shell, true);
+                        updateControls(shell, !siteVerifying);
                         message(reason);
                     }
                     showAvailableUpdate();

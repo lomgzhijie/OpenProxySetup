@@ -25,7 +25,7 @@ import java.net.URI;
 public final class SiteBrowserActivity extends Activity {
     private WebView web;
     private TextView status;
-    private String address, origin, password, themeScript;
+    private String address, origin, themeScript;
     private boolean dark;
     private LinearLayout frame, toolbar;
     private int bg, fg, surface;
@@ -40,10 +40,9 @@ public final class SiteBrowserActivity extends Activity {
     }
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
-        address = getIntent().getStringExtra("url");
-        password = getIntent().getStringExtra("password");
-        if (password == null) password = "";
         getIntent().removeExtra("password");
+        if(!getIntent().getBooleanExtra("verified",false)){finish();return;}
+        address = getIntent().getStringExtra("url");
         dark = getIntent().getBooleanExtra("dark", false);
         try {
             URI uri = new URI(address);
@@ -73,6 +72,9 @@ public final class SiteBrowserActivity extends Activity {
         }));
         toolbar.addView(button("刷新", () -> { if (web != null) web.reload(); }));
         toolbar.addView(button("↗", this::external));
+        toolbar.addView(button("部署", () -> {
+            setResult(RESULT_OK,new Intent().putExtra("deployment",true));finish();
+        }));
         frame.addView(toolbar);
         status = new TextView(this); status.setTextSize(12); status.setPadding(dp(12), dp(4), dp(12), dp(6));
         frame.addView(status);
@@ -85,6 +87,8 @@ public final class SiteBrowserActivity extends Activity {
         web.setSaveEnabled(false);
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true); settings.setDomStorageEnabled(true);
+        String ua=getIntent().getStringExtra("userAgent");
+        if(ua!=null)settings.setUserAgentString(ua);
         settings.setAllowFileAccess(false); settings.setAllowContentAccess(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setSafeBrowsingEnabled(true); settings.setSupportMultipleWindows(false);
@@ -123,14 +127,8 @@ public final class SiteBrowserActivity extends Activity {
         if (web == null || !sameOrigin(web.getUrl(), origin)) return;
         web.evaluateJavascript(themeScript.replace("__OPS_ORIGIN__", JSONObject.quote(origin))
                 .replace("__OPS_DARK__", Boolean.toString(dark)), null);
-        if (fill && !password.isEmpty()) {
-            String script = "(()=>{let tries=0;const fill=()=>{if(window.top!==window||location.origin!==" + JSONObject.quote(origin)
-                    + "||location.pathname!='/login')return;const p=document.querySelector('#password');"
-                    + "if(p&&p.type==='password'){if(!p.value){p.value=" + JSONObject.quote(password)
-                    + ";p.dispatchEvent(new Event('input',{bubbles:true}));}}else if(++tries<30)setTimeout(fill,500);};fill();})()";
-            web.evaluateJavascript(script, null);
-        }
     }
+
     private void external() { confirmExternal(web != null && sameOrigin(web.getUrl(), origin) ? web.getUrl() : address); }
     private void confirmExternal(String url) {
         Uri target = Uri.parse(url);
@@ -162,7 +160,6 @@ public final class SiteBrowserActivity extends Activity {
     @Override public void onBackPressed() { if (web != null && web.canGoBack()) web.goBack(); else super.onBackPressed(); }
     @Override public void onPause() { CookieManager.getInstance().flush(); super.onPause(); }
     @Override public void onDestroy() {
-        password = "";
         if (web != null) { frame.removeView(web); web.destroy(); web = null; }
         super.onDestroy();
     }

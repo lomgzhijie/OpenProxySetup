@@ -28,3 +28,12 @@ jobs:
       - name: Check embedded dashboard theme scope
         shell: powershell
         run: node ./tests/admin-theme.test.cjs
+      - name: Check password verification
+        shell: powershell
+        run: |
+          $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+          $output = Join-Path $env:RUNNER_TEMP 'SiteAuthTests.exe'
+          & $compiler /nologo /target:exe "/out:$output" /reference:System.Net.Http.dll /reference:System.Web.Extensions.dll launcher/SiteAuth.cs tests/site-auth.tests.cs
+          if ($LASTEXITCODE -ne 0) { throw 'Password verifier compilation failed' }
+          & $output
+          if ($LASTEXITCODE -ne 0) { throw 'Password verifier regression failed' }

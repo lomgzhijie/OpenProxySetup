@@ -3,7 +3,7 @@ $ErrorActionPreference='Stop'
 $root=Split-Path -Parent $MyInvocation.MyCommand.Path
 $outputDirectory = (Resolve-Path -LiteralPath $OutputDirectory).Path
 $portableZip = Join-Path $outputDirectory 'OpenProxySetup-windows-x64-portable.zip'
-$cmdZip = Join-Path $outputDirectory 'OpenProxySetup-windows-x64-cmd-v1.4.2.zip'
+$cmdZip = Join-Path $outputDirectory 'OpenProxySetup-windows-x64-cmd-v1.4.3.zip'
 & (Join-Path $root '构建应用.ps1')
 $files=@('OpenProxySetup.ico','Cloudflare授权.cmd','app.ps1','site-store.ps1','site-browser.ps1','update.ps1','readme-view.ps1','deploy.ps1','dnshe.ps1','proxy.ps1','links.ps1','README.md','README.en.md','README.ja.md','README.ko.md','LICENSE')
 foreach($file in $files){ if(-not(Test-Path (Join-Path $root $file))){throw "缺少文件：$file"} }

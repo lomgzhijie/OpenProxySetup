@@ -2,7 +2,7 @@
 
 [简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-[Windows x64 다운로드](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [Android APK](https://github.com/lomgzhijie/OpenProxySetup/releases/tag/v1.4.2) · [문제 신고](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [기여하기](CONTRIBUTING.md)
+[Windows x64 다운로드](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [Android APK](https://github.com/lomgzhijie/OpenProxySetup/releases/tag/v1.4.3) · [문제 신고](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [기여하기](CONTRIBUTING.md)
 
 OpenProxySetup은 Windows와 Android용 배포 마법사를 제공합니다. 본인의 Cloudflare 계정으로 로그인하고 관리자 비밀번호를 설정합니다. 앱은 함께 제공되는 [edgetunnel](https://github.com/cmliu/edgetunnel) 소스로 Cloudflare KV와 Pages를 만들고 클릭할 수 있는 사이트 주소를 표시합니다. 사이트의 `/admin`에 접속해 설정한 비밀번호로 로그인하면 업스트림 관리 화면에서 노드와 구독 링크를 확인할 수 있습니다.
 
@@ -14,7 +14,7 @@ OpenProxySetup은 Windows와 Android용 배포 마법사를 제공합니다. 본
 
 ### 다운로드 및 설치
 
-**Android 8.0 이상**을 지원합니다. [Android v0.3.6 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.2/OpenProxySetup-android-v0.3.6.apk)를 내려받아 휴대전화에서 열면 앱을 설치하거나 업데이트할 수 있습니다.
+**Android 8.0 이상**을 지원합니다. [Android v0.3.7 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.7.apk)를 내려받아 휴대전화에서 열면 앱을 설치하거나 업데이트할 수 있습니다.
 
 ### 처음 배포하기
 
@@ -27,17 +27,19 @@ OpenProxySetup은 Windows와 Android용 배포 마법사를 제공합니다. 본
 
 ### 기존 사이트 관리
 
-Windows와 Android 모두 앱 안에서 `/admin`을 열 수 있으며 주간·야간 모드의 색상이 적용됩니다. 사이트 주소와 비밀번호를 입력하고 「记住此站点和密码」를 켠 뒤 「保存站点」 또는 「在应用内打开后台」를 누르면 다음 실행 때 복원됩니다. 첫 로그인 화면에 비밀번호가 채워지며 만료되지 않은 로그인 세션은 재사용됩니다. 배포가 성공한 뒤에도 사이트가 자동 저장됩니다.
+Windows와 Android에는 별도의 「部署」(배포) 페이지와 「管理」(관리) 페이지가 있으며 오른쪽 위에서 전환할 수 있습니다. 관리 목록에는 도메인 이름만 표시되며 여러 사이트를 추가·편집·삭제할 수 있습니다. 이전 버전의 단일 사이트 기록은 자동으로 이전됩니다.
 
-인증 정보는 기기 안에 암호화하여 저장합니다. Windows에서는 현재 사용자의 DPAPI를, Android에서는 Android Keystore와 AES-GCM을 사용합니다. 기억 기능을 끄면 저장된 인증 정보가 삭제되며, 「清除本机站点与登录会话」로 주소·비밀번호·로그인 상태를 함께 지울 수 있습니다. 사이트 도메인을 바꾸면 비밀번호 입력란이 비워집니다. Cloudflare와 DNSHE API 인증 정보는 이 저장 기능에 포함되지 않습니다. 내장 관리 화면의 설정·노드·구독 기능은 유지되며 새로고침과 외부 브라우저 열기도 제공합니다.
+「添加站点」에서 도메인 또는 HTTPS 주소와 관리자 비밀번호를 입력하고 「验证并保存」(검증 후 저장) 또는 「验证并打开后台」(검증 후 관리 화면 열기)를 선택하세요. 앱은 기존 브라우저 쿠키를 재사용하지 않고 입력한 비밀번호를 검증하며, 보호된 관리 화면 접근도 확인한 뒤 저장하거나 엽니다. 검증 실패 시 기존에 저장한 올바른 비밀번호를 덮어쓰지 않습니다. 저장된 사이트를 열 때는 비밀번호를 자동 검증하므로 다시 입력할 필요가 없습니다.
 
-Windows 내장 관리 화면에는 Microsoft Edge WebView2 Runtime이 필요합니다. Windows 11에는 일반적으로 포함되어 있으며, 없다면 [Microsoft 공식 페이지](https://developer.microsoft.com/microsoft-edge/webview2/)에서 설치하세요.
+주소와 비밀번호는 기기에 암호화하여 저장됩니다. Windows는 현재 사용자의 DPAPI를, Android는 Android Keystore와 AES-GCM을 사용합니다. 사이트 하나만 삭제하거나 모든 기기 내 사이트 정보와 로그인 상태를 지울 수 있습니다. 개별 삭제는 다른 사이트에 영향을 주지 않습니다. Cloudflare와 DNSHE API 인증 정보는 이 저장 기능에 포함되지 않습니다. 내장 관리 화면은 설정·노드·구독 기능을 유지하며 앱의 주간·야간 색상을 따릅니다.
+
+Windows 내장 관리 화면에는 Microsoft Edge WebView2 Runtime이 필요합니다. Windows 11에는 일반적으로 포함되어 있습니다. 없다면 [Microsoft 공식 페이지](https://developer.microsoft.com/microsoft-edge/webview2/)에서 설치하고 앱을 다시 실행하세요.
 
 ## Windows 버전 다운로드 및 사용
 
-홈 화면에 법률 관련 안내가 표시되며 「后台管理」(관리 화면)로 바로 이동할 수도 있습니다. 배포에 성공하면 사이트 주소와 관리자 비밀번호가 자동 입력됩니다. 기존 사이트도 앱 안에서 관리할 수 있으며 주소와 비밀번호를 기기에 암호화해 저장할 수 있습니다. 저장한 정보와 로그인 상태는 지울 수 있습니다.
+홈 화면에 법률 관련 안내가 표시되며 「后台管理」(관리 화면)로 바로 이동할 수도 있습니다. 배포에 성공하면 사이트가 관리 목록에 자동으로 추가됩니다. 오른쪽 위 「管理」에서 저장된 사이트를 열거나 다른 사이트를 추가·검증할 수 있습니다.
 
-1. [Windows x64 설치 프로그램](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.2/OpenProxySetup-windows-x64-setup.exe)을 다운로드하고 실행한 뒤 설치 위치를 선택합니다. 설치 프로그램이 `自建机场` 폴더를 만들고 배포 마법사를 엽니다. 다음부터는 이 폴더의 `OpenProxySetup.exe`를 실행합니다.
+1. [Windows x64 설치 프로그램](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-windows-x64-setup.exe)을 다운로드하고 실행한 뒤 설치 위치를 선택합니다. 설치 프로그램이 `自建机场` 폴더를 만들고 배포 마법사를 엽니다. 다음부터는 이 폴더의 `OpenProxySetup.exe`를 실행합니다.
 2. 1단계에서 ‘开始 Cloudflare 授权’을 눌러 브라우저에서 [Cloudflare](https://dash.cloudflare.com/sign-up)에 가입하거나 로그인하고 인증을 완료합니다. 마법사로 돌아와 ‘我已完成授权，继续’를 선택합니다. 인증이 확인되면 2단계에서 [DNSHE](https://my.dnshe.com/) 도메인을 발급받고 3단계의 ‘도메인 관리 → API 관리’에서 API Key와 API Secret을 만듭니다. Cloudflare 계정 정보는 Cloudflare 웹사이트에서 입력합니다.
 3. DNSHE 도메인, API Key, API Secret, 12자 이상의 관리자 비밀번호를 입력하고 배포를 시작합니다. 앱이 KV, Pages, 시크릿을 만들고 배포한 다음 Pages에 사용자 지정 도메인 연결을 요청합니다. DNSHE API로 `pages.dev`를 가리키는 CNAME도 추가합니다. 충돌하는 기존 DNS 레코드는 보존합니다.
 4. 배포가 끝나면 앱에 표시된 관리 주소를 열고 설정한 비밀번호로 로그인합니다. 관리 화면에서 노드 또는 구독 링크를 복사해 호환 클라이언트에 가져옵니다. 사용 가능한 형식은 배포에 사용한 업스트림 버전에 따라 달라집니다. 사용자 지정 도메인이 활성화될 때까지 앱에 표시된 `pages.dev` 주소를 사용할 수 있습니다.
@@ -69,7 +71,7 @@ CNAME을 추가하려면 DNSHE API Key와 API Secret이 필요합니다. 앱은 
 
 `OpenProxySetup-windows-x64-portable.zip`의 전체 압축을 푼 후 `OpenProxySetup.exe`를 더블 클릭합니다. EXE, `runtime`, `vendor`, 스크립트를 같은 폴더에 둡니다. Windows의 .NET Framework와 Windows PowerShell 5.1을 사용합니다. 시작에 실패하면 `启动应用.cmd`를 실행해 오류를 확인할 수 있습니다.
 
-[v1.4.2 CMD 버전](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.2/OpenProxySetup-windows-x64-cmd-v1.4.2.zip)도 사용할 수 있습니다. ZIP 파일의 압축을 모두 풀고 `OpenProxySetup.cmd`를 더블 클릭하세요.
+[v1.4.3 CMD 버전](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-windows-x64-cmd-v1.4.3.zip)도 사용할 수 있습니다. ZIP 파일의 압축을 모두 풀고 `OpenProxySetup.cmd`를 더블 클릭하세요.
 
 ## 유지보수용 패키징
 
