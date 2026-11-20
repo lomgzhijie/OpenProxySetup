@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "org.openproxysetup",
+      "sha256_cert_fingerprints": ["0F:C2:BB:AA:28:21:D7:B6:06:DD:90:CF:13:19:D5:5F:50:8B:CA:2A:B3:97:7E:A8:7D:0F:70:99:0F:7B:95:85"]
+    }
+  }
+]
