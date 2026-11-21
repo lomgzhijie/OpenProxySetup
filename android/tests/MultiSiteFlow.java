@@ -78,6 +78,14 @@ public final class MultiSiteFlow extends Instrumentation {
         getUiAutomation().takeScreenshot().compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);
         Bundle shot=new Bundle();shot.putString("shot_"+name,android.util.Base64.encodeToString(out.toByteArray(),android.util.Base64.NO_WRAP));sendStatus(2,shot);
     }
+    void waitForText(String text) {
+        for (int attempt=0;attempt<50;attempt++) {
+            AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();
+            if(root!=null&&!root.findAccessibilityNodeInfosByText(text).isEmpty())return;
+            SystemClock.sleep(100);
+        }
+        throw new AssertionError("Visible feedback did not appear: "+text);
+    }
     void seedLegacy()throws Exception{
         Method key=store().getDeclaredMethod("key");key.setAccessible(true);
         javax.crypto.Cipher cipher=javax.crypto.Cipher.getInstance("AES/GCM/NoPadding");
@@ -144,7 +152,7 @@ public final class MultiSiteFlow extends Instrumentation {
                 ActivityMonitor block=addMonitor("org.openproxysetup.SiteBrowserActivity",null,false);
                 tap("验证并打开后台");waitDone();
                 require(sites().size()==1&&block.getHits()==0,"Wrong password with old valid cookie neither saves nor opens");removeMonitor(block);
-                require(getUiAutomation().getRootInActiveWindow().findAccessibilityNodeInfosByText("密码不正确").size()>0,"Password error feedback");
+                waitForText("密码不正确");
                 picture("android-password-error.png");
                 enter("alpha.test","slow-password");tap("验证并打开后台");SystemClock.sleep(50);
                 runOnMainSync(app::onBackPressed);SystemClock.sleep(1400);
