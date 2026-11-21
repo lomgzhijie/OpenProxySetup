@@ -36,7 +36,8 @@
   <aside class="docs-sidebar">
     <nav aria-label="On this page">
       <p>On this page</p>
-      <ul><li><a href="#android-apk">Android APK</a></li>
+      <ul><li><a href="#choose-a-platform">Choose a platform</a></li>
+<li><a href="#android-apk">Android APK</a></li>
 <li><a href="#install-and-use-on-windows">Install and use on Windows</a></li>
 <li><a href="#client-compatibility">Client compatibility</a></li>
 <li><a href="#portable-zip">Portable ZIP</a></li>
@@ -51,6 +52,52 @@
 <p>OpenProxySetup provides deployment wizards for Windows and Android. Authorize your own Cloudflare account and set an administrator password. It uses the bundled <a href="https://github.com/cmliu/edgetunnel">edgetunnel</a> source to create Cloudflare KV and Pages resources and displays a clickable site address. Open the site’s <code>/admin</code> page and enter the password to view nodes and subscription links in the upstream dashboard.</p>
 <p>The project provides a deployment wizard. Each user deploys to their own Cloudflare account. Shared nodes, accounts, and hosting are outside the scope of the project.</p>
 <p>The app checks for updates at startup and shows a dialog when a newer version is available. Choose Download update, Visit website, or Later. You can also check manually from the Android home screen or the Windows footer. Open the downloaded installer to update. This feature starts with Android v0.3.5 and Windows v1.4.1.</p>
+<h2 id="choose-a-platform">Choose a platform</h2>
+<p><strong>We recommend using a Windows computer for your first deployment.</strong> A larger screen and keyboard make it easier to enter domains, compare Cloudflare and DNSHE pages, copy credentials, and read error messages. You can also complete deployment and site management on Android when using a phone.</p>
+<div class="docs-table" role="region" aria-label="Client compatibility" tabindex="0">
+<table>
+<thead>
+<tr>
+<th>Comparison</th>
+<th>Windows</th>
+<th>Android</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>System</td>
+<td>Windows 10/11, x64</td>
+<td>Android 8.0 or later</td>
+</tr>
+<tr>
+<td>Cloudflare authorization</td>
+<td>Browser authorization through Wrangler</td>
+<td>Browser OAuth or a manually entered API token</td>
+</tr>
+<tr>
+<td>Initial setup</td>
+<td>Keyboard and multiple windows help with first-time setup and troubleshooting</td>
+<td>Touch input with switching between the app and browser</td>
+</tr>
+<tr>
+<td>Deployment</td>
+<td>Create KV and Pages, set the admin password, and bind a DNSHE domain</td>
+<td>Create KV and Pages, set the admin password, and bind a DNSHE domain</td>
+</tr>
+<tr>
+<td>Site management</td>
+<td>Multiple sites, password verification, in-app dashboards, and light/dark mode</td>
+<td>Multiple sites, password verification, in-app dashboards, and light/dark mode</td>
+</tr>
+<tr>
+<td>Distribution</td>
+<td>EXE installer, portable ZIP, and CMD edition</td>
+<td>Installable APK</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Both platforms need network access to Cloudflare and DNSHE. The deployed site can be used with compatible clients. Choose the deployment platform that suits your workflow.</p>
 <h2 id="android-apk">Android APK</h2>
 <h3>Download and install</h3>
 <p>Requires <strong>Android 8.0 or later</strong>. Download the <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.11.apk">Android v0.3.11 APK</a> and open it on your phone to install or update the app.</p>

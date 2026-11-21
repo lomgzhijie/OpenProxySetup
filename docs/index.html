@@ -36,7 +36,8 @@
   <aside class="docs-sidebar">
     <nav aria-label="本页目录">
       <p>本页目录</p>
-      <ul><li><a href="#android-安装版">Android 安装版</a></li>
+      <ul><li><a href="#选择使用平台">选择使用平台</a></li>
+<li><a href="#android-安装版">Android 安装版</a></li>
 <li><a href="#windows-版下载与使用">Windows 版下载与使用</a></li>
 <li><a href="#客户端适配情况">客户端适配情况</a></li>
 <li><a href="#zip-免安装版">ZIP 免安装版</a></li>
@@ -51,6 +52,52 @@
 <p>OpenProxySetup 提供 Windows 和 Android 部署向导。用户授权自己的 Cloudflare 账号，并设置后台管理员密码，应用使用包内的 <a href="https://github.com/cmliu/edgetunnel">edgetunnel</a> 源码创建 Cloudflare KV 和 Pages，并给出可点击的网站地址。用户访问网站的 <code>/admin</code>，输入刚设置的密码，即可在上游后台查看节点和订阅链接。</p>
 <p>本项目提供部署向导，不提供共享节点、账号或云服务。每位用户部署到自己的 Cloudflare 账号。</p>
 <p>启动时会自动检查新版本，发现更新后弹窗提示，可选「下载更新」「前往官网」或「稍后」。Android 首页和 Windows 窗口底部也有「检查更新」。下载后运行安装包更新，Android 可覆盖安装。首次使用此功能需先安装 Android v0.3.5 或 Windows v1.4.1。</p>
+<h2 id="选择使用平台">选择使用平台</h2>
+<p><strong>首次部署建议优先使用 Windows 电脑操作。</strong> 电脑屏幕更大，填写域名、切换 Cloudflare 与 DNSHE 页面、复制授权信息和查看错误提示更方便。只有手机时，也可以使用 Android 版完成部署和管理。</p>
+<div class="docs-table" role="region" aria-label="客户端适配情况" tabindex="0">
+<table>
+<thead>
+<tr>
+<th>对比项目</th>
+<th>Windows 版</th>
+<th>Android 版</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>系统要求</td>
+<td>Windows 10/11，x64</td>
+<td>Android 8.0 及以上</td>
+</tr>
+<tr>
+<td>Cloudflare 授权</td>
+<td>通过 Wrangler 打开浏览器授权</td>
+<td>浏览器 OAuth 授权，也可手动填写 API Token</td>
+</tr>
+<tr>
+<td>首次配置</td>
+<td>键盘输入、多窗口对照，适合第一次部署和排查问题</td>
+<td>触屏填写，需要在应用和浏览器间切换</td>
+</tr>
+<tr>
+<td>部署功能</td>
+<td>创建 KV 和 Pages、配置管理员密码、绑定 DNSHE 域名</td>
+<td>创建 KV 和 Pages、配置管理员密码、绑定 DNSHE 域名</td>
+</tr>
+<tr>
+<td>站点管理</td>
+<td>多站点保存、密码验证、应用内后台、日间／暗夜模式</td>
+<td>多站点保存、密码验证、应用内后台、日间／暗夜模式</td>
+</tr>
+<tr>
+<td>安装方式</td>
+<td>EXE 安装版、ZIP 免安装版、CMD 版</td>
+<td>APK 安装版</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>两端都需要能访问 Cloudflare 和 DNSHE 的网络。部署后的站点可在兼容客户端使用，部署时使用的平台可按操作习惯选择。</p>
 <h2 id="android-安装版">Android 安装版</h2>
 <h3>下载和安装</h3>
 <p>支持 <strong>Android 8.0 及以上</strong>。下载 <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.11.apk">Android v0.3.11 安装包</a> 后，在手机上打开 APK 安装。已安装旧版可直接覆盖安装。</p>
