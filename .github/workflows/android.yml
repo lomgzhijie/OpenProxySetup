@@ -21,14 +21,17 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Install Android SDK components
         run: |
-          sdkmanager --licenses < <(yes) >/dev/null
-          sdkmanager 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0' 'emulator' 'system-images;android-30;google_apis;x86_64'
+          sdkmanager=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)
+          test -x "$sdkmanager"
+          printf '%s\n' "$(dirname "$sdkmanager")" "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          "$sdkmanager" --licenses < <(yes) >/dev/null
+          "$sdkmanager" 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0' 'emulator' 'system-images;android-30;google_apis;x86_64'
       - name: Build with a disposable test key
         shell: pwsh
         run: |
