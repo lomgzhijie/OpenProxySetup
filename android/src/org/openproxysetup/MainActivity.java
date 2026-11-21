@@ -79,12 +79,14 @@ public final class MainActivity extends Activity {
     private boolean busy, dark, pagesReady, domainActive, pending, runAttempted, bindOnRetry;
     private int background, surface, panel, border, ink, muted, accent, primary, good, danger;
     private String account = "", token = "", verifiedAccount = "", verifiedToken = "";
+    private CloudflareOAuth cloudflareOAuth;
+    private CloudflareOAuth.Session oauthSession;
     private String domain = "", key = "", secret = "", password = "", submittedPassword = "", boundDomain = "";
     private String manageUrl = "", managePassword = "", progressMessage = "";
     private boolean managementMode, siteVerifying;
     private int deploymentScreen = HOME;
     private int siteValidationRevision;
-    private String editingSite = "", deployedPassword = "", deployedManagementUrl = "";
+    private String editingSite = "", deployedPassword = "";
     private String savedSiteError = "";
     private Deployment deployment;
     private boolean updateChecking;
@@ -93,6 +95,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        cloudflareOAuth = new CloudflareOAuth(this);
         boolean systemDark = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
                 == Configuration.UI_MODE_NIGHT_YES;
         dark = getPreferences(MODE_PRIVATE).getBoolean("dark", systemDark);
@@ -100,7 +103,14 @@ public final class MainActivity extends Activity {
         try { SavedSite.all(this); }
         catch (Exception e) { savedSiteError = "保存的站点无法解密，请清除本机记录后重新添加。"; }
         render(getPreferences(MODE_PRIVATE).getBoolean("managementMode", false) ? MANAGE : HOME);
+        handleCloudflareCallback(getIntent());
         handler.post(() -> checkForUpdates(false));
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        handleCloudflareCallback(intent);
     }
 
     @Override
@@ -220,12 +230,15 @@ public final class MainActivity extends Activity {
     private void steps() {
         LinearLayout strip = row();
         for (int i = 1; i <= STEP_LABELS.length; i++) {
-            TextView item = text(i == screen ? "第 " + i + " 步" : Integer.toString(i),
-                    12, i == screen ? accent : muted, i == screen);
+            final int destination = i;
+            Button item = action(i == screen ? "第 " + i + " 步" : Integer.toString(i), false,
+                    () -> { if (screen != destination) render(destination); });
+            item.setTextSize(12);
+            item.setTextColor(i == screen ? accent : muted);
             item.setContentDescription("第 " + i + " 步 " + STEP_LABELS[i - 1] + (i == screen ? " 当前步骤" : ""));
             item.setGravity(Gravity.CENTER);
             item.setBackground(shape(i == screen ? panel : surface, i == screen ? accent : border, 12));
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(39), 1);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(48), 1);
             if (i > 1) params.leftMargin = dp(7);
             strip.addView(item, params);
         }
@@ -299,11 +312,16 @@ public final class MainActivity extends Activity {
     private void authorization() {
         card();
         heading("授权 Cloudflare");
-        copy("在浏览器登录 Cloudflare，确认账号 ID，然后创建目标账号的 API Token。完成后回到这里验证并继续。");
+        if (cloudflareOAuth.configured()) {
+            copy("在浏览器选择部署账号并确认权限，完成后返回应用继续。");
+            button("在浏览器授权 Cloudflare ↗", true, this::startCloudflareOAuth);
+        } else {
+            copy("在浏览器登录 Cloudflare，确认账号 ID，然后创建目标账号的 API Token。");
+        }
         button("登录或注册 Cloudflare ↗", false, () -> open(CLOUDFLARE));
         button("手机端图解：创建令牌与查找 Account ID", false, () -> render(CLOUDFLARE_GUIDE));
         card();
-        title("连接 Cloudflare 账号");
+        title("使用 API Token 授权");
         copy("创建自定义 Token 时，为目标账号授予 Cloudflare Pages 编辑和 Workers KV Storage 编辑权限。");
         button("打开 API Token 页面 ↗", false, () -> open(TOKEN_PAGE));
         field("Cloudflare Account ID", "粘贴 32 位账号 ID", account, false, v -> account = v.trim());
@@ -312,6 +330,66 @@ public final class MainActivity extends Activity {
         statusLine();
         button("验证授权并继续", true, () -> verify(false));
         button("返回首页", false, () -> render(HOME));
+    }
+
+    private void startCloudflareOAuth() {
+        try {
+            Intent browser = new Intent(Intent.ACTION_VIEW, cloudflareOAuth.start());
+            browser.addCategory(Intent.CATEGORY_BROWSABLE);
+            startActivity(browser);
+            message("请在浏览器完成授权。若停留在回调页，请点「返回应用」。");
+        } catch (android.content.ActivityNotFoundException error) {
+            cloudflareOAuth.cancel();
+            message("手机上没有可用的浏览器。可改用 API Token 授权。");
+        } catch (IOException error) {
+            message(error.getMessage());
+        }
+    }
+
+    private void handleCloudflareCallback(Intent intent) {
+        if (intent == null || !Intent.ACTION_VIEW.equals(intent.getAction())) return;
+        Uri callback = intent.getData();
+        intent.setData(null);
+        if (!cloudflareOAuth.matchesPending(callback) || busy || siteVerifying) return;
+        if (screen != AUTH) render(AUTH);
+        try {
+            CloudflareOAuth.Exchange exchange = cloudflareOAuth.accept(callback);
+            background("正在读取 Cloudflare 授权结果…", () -> {
+                CloudflareOAuth.Session session = exchange.exchange();
+                String credential = session.accessToken();
+                java.util.LinkedHashMap<String, String> accounts = new java.util.LinkedHashMap<>();
+                for (int page = 1; ; page++) {
+                    org.json.JSONArray items = Deployment.listAccounts(credential, page);
+                    for (int i = 0; i < items.length(); i++) {
+                        org.json.JSONObject item = items.getJSONObject(i);
+                        String id = item.optString("id").toLowerCase(Locale.ROOT);
+                        if (!id.matches("[a-f0-9]{32}") || (runAttempted && !id.equals(verifiedAccount))) continue;
+                        accounts.put(id, item.optString("name", "Cloudflare 账号") + " · " + id.substring(24));
+                    }
+                    if (items.length() < 50) break;
+                }
+                if (accounts.isEmpty()) throw new IOException(runAttempted
+                        ? "请在浏览器授权本次部署使用的原账号。"
+                        : "没有找到已授权的 Cloudflare 账号，请重新授权并选择目标账号。");
+                return () -> selectOAuthAccount(session, accounts);
+            });
+        } catch (IOException error) {
+            message(error.getMessage());
+        }
+    }
+
+    private void selectOAuthAccount(CloudflareOAuth.Session session, java.util.LinkedHashMap<String, String> accounts) {
+        List<String> ids = new ArrayList<>(accounts.keySet());
+        if (ids.size() == 1) {
+            verifyCloudflare(ids.get(0), "", session, runAttempted);
+            return;
+        }
+        message("选择要部署到的 Cloudflare 账号。");
+        dialog().setTitle("选择部署账号")
+                .setItems(accounts.values().toArray(new String[0]),
+                        (window, index) -> verifyCloudflare(ids.get(index), "", session, runAttempted))
+                .setNegativeButton("取消", (window, which) -> message("未选择部署账号，可重新授权。"))
+                .show();
     }
 
     private void cloudflareGuide() {
@@ -337,13 +415,16 @@ public final class MainActivity extends Activity {
             message("请输入 32 位 Account ID 和 API Token。");
             return;
         }
-        final String selectedAccount = account.toLowerCase(Locale.ROOT);
-        final String credential = token;
+        verifyCloudflare(account.toLowerCase(Locale.ROOT), token, null, forProgress || runAttempted);
+    }
+
+    private void verifyCloudflare(String selectedAccount, String manualToken, CloudflareOAuth.Session session, boolean forProgress) {
         if (runAttempted && !selectedAccount.equals(verifiedAccount)) {
             message("本次部署已创建资源。请用原账号重新授权，或在部署页开始新站点。");
             return;
         }
         background("正在验证 Cloudflare 授权…", () -> {
+            String credential = session == null ? manualToken : session.accessToken();
             Deployment selected = deployment;
             if (selected == null || !selectedAccount.equals(verifiedAccount)) {
                 try (InputStream worker = getAssets().open("_worker.js")) {
@@ -355,8 +436,11 @@ public final class MainActivity extends Activity {
             return () -> {
                 deployment = checked;
                 verifiedAccount = selectedAccount;
-                verifiedToken = credential;
-                render(forProgress ? DEPLOY : DOMAIN);
+                verifiedToken = manualToken;
+                oauthSession = session;
+                cloudflareOAuth.cancel();
+                if (!forProgress) render(DOMAIN);
+                else render(pending ? PROGRESS : DEPLOY);
             };
         });
     }
@@ -435,8 +519,9 @@ public final class MainActivity extends Activity {
     }
 
     private void startDeploy(boolean withDomain) {
-        if (deployment == null || !token.equals(verifiedToken) || !account.equalsIgnoreCase(verifiedAccount)) {
-            verify(true);
+        if (oauthSession == null && (deployment == null || !token.equals(verifiedToken) || !account.equalsIgnoreCase(verifiedAccount))) {
+            render(AUTH);
+            message("请先完成 Cloudflare 授权，再开始部署。");
             return;
         }
         String selectedDomain = boundDomain.isEmpty() ? domain : boundDomain;
@@ -457,7 +542,8 @@ public final class MainActivity extends Activity {
         progressMessage = "";
         runStarted = SystemClock.elapsedRealtime();
         render(PROGRESS);
-        final String credential = verifiedToken;
+        final String manualToken = verifiedToken;
+        final CloudflareOAuth.Session session = oauthSession;
         final String admin = submittedPassword;
         final String apiKey = key;
         final String apiSecret = secret;
@@ -466,12 +552,13 @@ public final class MainActivity extends Activity {
         background("正在开始部署…", () -> {
             if (publish) {
                 runOnUiThread(() -> setPhase(1));
+                String credential = session == null ? manualToken : session.accessToken();
                 current.verify(credential);
                 current.deploy(credential, admin, stage -> runOnUiThread(() -> setPhase(stage)));
                 runOnUiThread(() -> {
                     pagesReady = true;
                     deployedPassword = admin;
-                    rememberDeploymentSite("https://" + current.pagesHost() + "/admin");
+                    rememberDeploymentSite(pagesAdminUrl(current), "");
                     submittedPassword = "";
                     setPhase(0);
                     completedPhase = 3;
@@ -480,6 +567,7 @@ public final class MainActivity extends Activity {
             }
             if (withDomain) {
                 runOnUiThread(() -> setPhase(4));
+                String credential = session == null ? manualToken : session.accessToken();
                 current.bind(credential, selectedDomain, apiKey, apiSecret,
                         () -> runOnUiThread(() -> boundDomain = selectedDomain));
                 return readDomainStatus(current, credential, selectedDomain);
@@ -490,7 +578,8 @@ public final class MainActivity extends Activity {
 
     private void checkDomainStatus() {
         if (!pending || waitStarted == 0 || SystemClock.elapsedRealtime() - waitStarted < RECHECK_DELAY_MS) return;
-        background("正在查询域名验证状态…", () -> readDomainStatus(deployment, verifiedToken, boundDomain));
+        background("正在查询域名验证状态…", () -> readDomainStatus(deployment,
+                oauthSession == null ? verifiedToken : oauthSession.accessToken(), boundDomain));
     }
 
     private Runnable readDomainStatus(Deployment current, String credential, String selectedDomain) {
@@ -536,10 +625,11 @@ public final class MainActivity extends Activity {
         domainActive = active;
         if (active) {
             completedPhase = 4;
-            rememberDeploymentSite("https://" + boundDomain + "/admin");
+            rememberDeploymentSite("https://" + boundDomain + "/admin", pagesAdminUrl(deployment));
         }
         progressMessage = detail;
         if (!managementMode) render(PROGRESS);
+        else if (active && screen == MANAGE) render(MANAGE);
     }
 
     private void progress() {
@@ -565,7 +655,7 @@ public final class MainActivity extends Activity {
             title("站点后台");
             Button pages = action("打开 Pages 后台", !domainActive, null);
             pages.setTag("availableDuringDeployment");
-            pages.setOnClickListener(view -> openDashboard("https://" + deployment.pagesHost() + "/admin"));
+            pages.setOnClickListener(view -> openDashboard(pagesAdminUrl(deployment)));
             append(section, pages, 9);
             if (domainActive) button("打开自定义域名后台", true, () -> openDashboard("https://" + boundDomain + "/admin"));
             button("进入后台管理", false, () -> openManage(PROGRESS));
@@ -574,6 +664,7 @@ public final class MainActivity extends Activity {
             if (pending) {
                 recheckButton = action("重新验证", false, this::checkDomainStatus);
                 append(section, recheckButton, 9);
+                button("重新授权 Cloudflare", false, () -> render(AUTH));
                 button("在 Cloudflare 查看进度 ↗", false, () -> open(CLOUDFLARE + verifiedAccount + "/pages/view/" + deployment.pagesHost().split("\\.")[0]));
             } else if (failedPhase > 0) {
                 button(pagesReady ? "重试域名绑定" : "继续部署", true,
@@ -629,7 +720,7 @@ public final class MainActivity extends Activity {
                     deployment = null;
                     pagesReady = domainActive = pending = runAttempted = false;
                     progressMessage = submittedPassword = boundDomain = password = "";
-                    deployedPassword = deployedManagementUrl = "";
+                    deployedPassword = "";
                     failedPhase = completedPhase = phase = 0;
                     waitStarted = totalTime = 0;
                     java.util.Arrays.fill(phaseTimes, 0);
@@ -726,14 +817,22 @@ public final class MainActivity extends Activity {
         getSystemService(ClipboardManager.class).setPrimaryClip(clip);message("后台密码已复制。");
     }
 
-    private void rememberDeploymentSite(String address) {
+    private static String pagesAdminUrl(Deployment deployedSite) {
+        return "https://" + deployedSite.pagesHost() + "/admin";
+    }
+
+    private void rememberDeploymentSite(String address, String previousAddress) {
         try {
-            SavedSite.save(this,address,deployedPassword,deployedManagementUrl);
-            deployedManagementUrl=address;
+            SavedSite.save(this, address, deployedPassword, previousAddress);
+            savedSiteError = "";
         } catch (Exception e) { savedSiteError="部署完成，但站点未保存，请在管理页面手动添加。"; }
     }
 
     private void verifySite(String input,String password,String previous,boolean open) {
+        verifySite(input, password, previous, open, null);
+    }
+
+    private void verifySite(String input,String password,String previous,boolean open,Deployment sourceDeployment) {
         if(siteVerifying)return;
         final String address=adminUrl(input);
         if(address==null||password.isEmpty()){message("请输入有效的站点域名和后台密码。");return;}
@@ -752,9 +851,13 @@ public final class MainActivity extends Activity {
                             if(isDestroyed()||isFinishing()||request!=siteValidationRevision)return;
                             siteVerifying=false;android.webkit.CookieManager.getInstance().flush();
                             if(!ok){updateControls(shell,!busy||managementMode);message("密码正确，但登录会话未能写入，请重试。");return;}
-                            try { SavedSite.save(this,address,password,previous); savedSiteError=""; }
-                            catch (Exception e) {updateControls(shell,!busy||managementMode);message("验证成功，但保存失败，请检查设备存储后重试。");return;}
-                            render(MANAGE);message("密码验证成功，站点已保存。");
+                            boolean temporaryAddress = sourceDeployment != null && sourceDeployment == deployment
+                                    && domainActive && address.equals(pagesAdminUrl(sourceDeployment));
+                            if (!temporaryAddress) {
+                                try { SavedSite.save(this,address,password,previous); savedSiteError=""; }
+                                catch (Exception e) {updateControls(shell,!busy||managementMode);message("验证成功，但保存失败，请检查设备存储后重试。");return;}
+                            }
+                            render(MANAGE);message(temporaryAddress ? "密码验证成功。" : "密码验证成功，站点已保存。");
                             if(open){
                                 Intent intent=new Intent(this,SiteBrowserActivity.class);
                                 intent.putExtra("url",address).putExtra("dark",dark).putExtra("userAgent",ua).putExtra("verified",true);
@@ -779,7 +882,7 @@ public final class MainActivity extends Activity {
         try {for(SavedSite.Site site:SavedSite.all(this))if(site.url.equals(address)){secret=site.password;break;}}
         catch(Exception ignored){}
         if(secret.isEmpty()) {editSite(null);manageUrl=SiteAuth.domain(address);render(SITE_EDIT);return;}
-        verifySite(address,secret,"",true);
+        verifySite(address,secret,"",true,deployment);
     }
 
     private static String adminUrl(String input) {return SiteAuth.adminUrl(input);}

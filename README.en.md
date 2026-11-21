@@ -14,16 +14,16 @@ The app checks for updates at startup and shows a dialog when a newer version is
 
 ### Download and install
 
-Requires **Android 8.0 or later**. Download the [Android v0.3.7 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.7.apk) and open it on your phone to install or update the app.
+Requires **Android 8.0 or later**. Download the [Android v0.3.10 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.10.apk) and open it on your phone to install or update the app.
 
 ### First deployment
 
-1. **Authorize Cloudflare.** In step 1, open the API Token page. Start from scratch with an account policy and select the account you want to deploy to. Grant `Pages Write` and `Workers KV Storage Write`, then create and copy the token.
-2. **Enter your Account ID.** Use the app’s Account ID link to open Workers & Pages. Copy the 32-character Account ID from Account Details. Paste the ID and token into their separate fields, then verify access and continue.
+1. **Authorize Cloudflare.** Tap **Authorize Cloudflare in the browser**, sign in with your own account, and approve access. Back in the app, select the deployment account if prompted.
+2. **Optional: use an API token.** Create a token with `Pages Write` and `Workers KV Storage Write` for your deployment account. Enter the token and the 32-character Account ID from Account Details, then verify and continue. Tap any step at the top to switch between steps.
 3. **Prepare a DNSHE domain.** In step 2, open DNSHE and register a domain, or copy the full name of an existing domain, such as `myhome.ccwu.cc`.
 4. **Create DNSHE API credentials.** On the DNSHE mobile site, expand Domain Management and find API Management in the navigation menu. Create an API key and copy both the API Key and API Secret.
 5. **Start deployment.** In step 4, enter the full domain, API Key, and API Secret. Set an administrator password of at least 12 characters, then start deployment. To add a domain later, choose **暂时只发布 Pages** (Publish Pages only for now).
-6. **Open the site dashboard.** After publication, you can sign in to the `pages.dev` dashboard using the password you just set. Allow about five minutes for custom domain validation. After one minute, you can tap **重新验证** (Recheck) to query the status. Once validation succeeds, open the dashboard at your custom domain.
+6. **Open the site dashboard.** After publication, you can sign in to the `pages.dev` dashboard using the password you just set. Allow about five minutes for custom domain validation. After one minute, you can tap **重新验证** (Recheck) to query the status. Once validation succeeds, open the dashboard at your custom domain. After the custom domain is verified, Android replaces the saved temporary `pages.dev` address for that deployment with your custom domain.
 
 ### Manage an existing site
 

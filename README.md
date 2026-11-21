@@ -14,16 +14,16 @@ OpenProxySetup 提供 Windows 和 Android 部署向导。用户授权自己的 C
 
 ### 下载和安装
 
-支持 **Android 8.0 及以上**。下载 [Android v0.3.7 安装包](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.7.apk) 后，在手机上打开 APK 安装。已安装旧版可直接覆盖安装。
+支持 **Android 8.0 及以上**。下载 [Android v0.3.10 安装包](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.10.apk) 后，在手机上打开 APK 安装。已安装旧版可直接覆盖安装。
 
 ### 首次部署
 
-1. **授权 Cloudflare。** 在应用第 1 步点「打开 API Token 页面」。创建令牌时选「从头开始（Custom）→ 从 Account 策略开始」，账户范围选要部署的账号。添加 `Pages Write`（Cloudflare Pages 编辑）和 `Workers KV Storage Write` 两项权限，创建后复制令牌。
-2. **填写 Account ID。** 点应用里的「打开 Cloudflare 查看 Account ID」，在 Workers & Pages 的「账户详情」里复制 32 位 Account ID。回到应用，把 ID 和令牌分别粘贴到对应输入框，再点「验证授权并继续」。
+1. **授权 Cloudflare。** 点「在浏览器授权 Cloudflare」，用自己的 Cloudflare 账号登录并同意授权。返回应用后选择要部署的账户（如果出现账户列表）。
+2. **可选：使用 API Token。** 在自己的目标账户上创建拥有 `Pages Write` 和 `Workers KV Storage Write` 的令牌。把令牌和「账户详情」里的 32 位 Account ID 填入应用，再点「验证授权并继续」。顶部步骤可点击切换。
 3. **准备 DNSHE 域名。** 在第 2 步打开 DNSHE，注册新域名或从「我的域名」复制已注册的完整域名，例如 `myhome.ccwu.cc`。
 4. **创建 DNSHE 授权。** 在 DNSHE 手机网页展开上方「域名管理」，在「功能导航」里点带钥匙图标的「API 管理」，创建并复制 API Key 和 API Secret。
 5. **开始部署。** 在第 4 步填写完整域名、API Key 和 API Secret，再设置至少 12 个字符的后台管理员密码，点「开始自动部署」。暂时没有域名时，可选「暂时只发布 Pages」，以后再绑定。
-6. **打开站点后台。** Pages 发布后可先点「打开 Pages 后台」，用刚设置的密码登录。自定义域名验证建议预留约 5 分钟。等满 1 分钟还在等待时，可点「重新验证」查询状态。验证成功后即可打开自定义域名后台。
+6. **打开站点后台。** Pages 发布后可先点「打开 Pages 后台」，用刚设置的密码登录。自定义域名验证建议预留约 5 分钟。等满 1 分钟还在等待时，可点「重新验证」查询状态。验证成功后即可打开自定义域名后台。 自定义域名验证成功后，Android 会用它替换同一次部署保存的 `pages.dev` 临时地址。
 
 ### 管理已有站点
 

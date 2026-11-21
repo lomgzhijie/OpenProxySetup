@@ -14,16 +14,16 @@ OpenProxySetup은 Windows와 Android용 배포 마법사를 제공합니다. 본
 
 ### 다운로드 및 설치
 
-**Android 8.0 이상**을 지원합니다. [Android v0.3.7 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.7.apk)를 내려받아 휴대전화에서 열면 앱을 설치하거나 업데이트할 수 있습니다.
+**Android 8.0 이상**을 지원합니다. [Android v0.3.10 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.10.apk)를 내려받아 휴대전화에서 열면 앱을 설치하거나 업데이트할 수 있습니다.
 
 ### 처음 배포하기
 
-1. **Cloudflare를 인증합니다.** 1단계에서 API 토큰 페이지를 엽니다. 처음부터 시작해 Account 정책을 선택하고 배포할 계정에 `Pages Write`와 `Workers KV Storage Write` 권한을 부여합니다. 토큰을 만든 뒤 복사합니다.
-2. **Account ID를 입력합니다.** 앱의 Account ID 링크로 Workers & Pages를 열고, 계정 세부 정보에서 32자리 Account ID를 복사합니다. 앱으로 돌아와 ID와 토큰을 각각 붙여넣고 인증을 확인합니다.
+1. **Cloudflare를 인증합니다.** 「在浏览器授权 Cloudflare」를 누르고 본인의 Cloudflare 계정으로 로그인해 권한을 승인합니다. 앱으로 돌아온 뒤 선택 화면이 나타나면 배포할 계정을 선택합니다.
+2. **선택 사항: API 토큰을 사용합니다.** 배포할 계정에 `Pages Write`와 `Workers KV Storage Write` 권한이 있는 토큰을 만듭니다. 토큰과 계정 세부 정보의 32자리 Account ID를 입력한 뒤 인증을 확인합니다. 화면 상단의 번호를 누르면 단계 사이를 이동할 수 있습니다.
 3. **DNSHE 도메인을 준비합니다.** 2단계에서 DNSHE를 열어 새 도메인을 등록하거나 `myhome.ccwu.cc`와 같은 기존 도메인의 전체 이름을 복사합니다.
 4. **DNSHE API 인증 정보를 만듭니다.** DNSHE 모바일 사이트에서 도메인 관리 메뉴를 펼쳐 열쇠 아이콘이 있는 API 관리로 이동합니다. 인증 정보를 만들고 API Key와 API Secret을 각각 복사합니다.
 5. **배포를 시작합니다.** 4단계에서 도메인 전체 이름, API Key, API Secret을 입력하고 12자 이상의 관리자 비밀번호를 설정합니다. 나중에 도메인을 연결하려면 「暂时只发布 Pages」를 선택해 Pages만 게시할 수 있습니다.
-6. **관리 화면을 엽니다.** Pages 게시 후에는 설정한 비밀번호로 `pages.dev` 관리 화면에 로그인할 수 있습니다. 사용자 지정 도메인 검증에는 약 5분을 예상하세요. 1분이 지나면 「重新验证」 버튼으로 상태를 확인할 수 있습니다. 검증이 완료되면 사용자 지정 도메인으로 관리 화면을 열 수 있습니다.
+6. **관리 화면을 엽니다.** Pages 게시 후에는 설정한 비밀번호로 `pages.dev` 관리 화면에 로그인할 수 있습니다. 사용자 지정 도메인 검증에는 약 5분을 예상하세요. 1분이 지나면 「重新验证」 버튼으로 상태를 확인할 수 있습니다. 검증이 완료되면 사용자 지정 도메인으로 관리 화면을 열 수 있습니다. 사용자 지정 도메인이 검증되면 Android는 해당 배포에 저장한 임시 `pages.dev` 주소를 사용자 지정 도메인으로 바꿉니다.
 
 ### 기존 사이트 관리
 

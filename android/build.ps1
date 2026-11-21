@@ -3,11 +3,13 @@ param(
     [Parameter(Mandatory = $true)][string]$BuildTools,
     [Parameter(Mandatory = $true)][string]$AndroidJar,
     [Parameter(Mandatory = $true)][string]$PreviewKey,
-    [Parameter(Mandatory = $true)][string]$OutputApk
+    [Parameter(Mandatory = $true)][string]$OutputApk,
+    [string]$OAuthClientId = '9dace92fec31d3b3664761b971adfd53'
 )
 
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
+if ($OAuthClientId -and $OAuthClientId -notmatch '^[a-zA-Z0-9_-]{8,128}$') { throw 'Invalid Cloudflare OAuth client ID.' }
 $vendor = Join-Path (Split-Path -Parent $root) 'vendor\edgetunnel'
 $temp = Join-Path ([IO.Path]::GetTempPath()) ('ops-android-' + [Guid]::NewGuid().ToString('N'))
 $classes = Join-Path $temp 'classes'
@@ -37,6 +39,9 @@ try {
     foreach ($entry in 'src','res','AndroidManifest.xml') {
         Copy-Item -LiteralPath (Join-Path $root $entry) -Destination $temp -Recurse
     }
+    $oauthResource = Join-Path $temp 'res\values\oauth.xml'
+    $oauthXml = '<resources><string name="cloudflare_oauth_client_id" translatable="false">' + $OAuthClientId + '</string></resources>'
+    [IO.File]::WriteAllText($oauthResource, $oauthXml)
 
     $compiledRes = Join-Path $temp 'res.zip'
     $generated = Join-Path $temp 'generated'

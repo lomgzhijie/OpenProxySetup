@@ -87,13 +87,57 @@ public final class MultiSiteFlow extends Instrumentation {
             .putString("iv",android.util.Base64.encodeToString(cipher.getIV(),2)).commit();
         getTargetContext().getSharedPreferences("MainActivity",0).edit().putBoolean("dark",true).putBoolean("managementMode",true).commit();
     }
+    void testDeploymentSite() throws Exception {
+        runOnMainSync(() -> {
+            try { call(app, "render", new Class[]{int.class}, 1); }
+            catch (Exception error) { throw new RuntimeException(error); }
+        });
+        tap("2"); require((Integer)field(app,"screen") == 2,"Step 2 can be selected");
+        tap("3"); require((Integer)field(app,"screen") == 3,"Step 3 can be selected");
+        tap("4"); require((Integer)field(app,"screen") == 4,"Step 4 can be selected");
+        tap("暂时只发布 Pages"); require((Integer)field(app,"screen") == 1,"Publishing still requires authorization");
+        tap("管理");
+
+        Class<?> deploymentClass = Class.forName("org.openproxysetup.Deployment",true,getTargetContext().getClassLoader());
+        Constructor<?> ctor = deploymentClass.getDeclaredConstructor(String.class,byte[].class);
+        ctor.setAccessible(true);
+        Object deployment = ctor.newInstance("0123456789abcdef0123456789abcdef",new byte[0]);
+        Method pagesHost = deploymentClass.getDeclaredMethod("pagesHost");
+        pagesHost.setAccessible(true);
+        String host = (String)pagesHost.invoke(deployment);
+        String url = "https://" + host + "/admin";
+        runOnMainSync(() -> {
+            try {
+                for (String[] entry : new String[][]{{"boundDomain","custom.test"},{"deployedPassword","correct-password"}}) {
+                    Field target = app.getClass().getDeclaredField(entry[0]);
+                    target.setAccessible(true); target.set(app,entry[1]);
+                }
+                Field target = app.getClass().getDeclaredField("deployment");
+                target.setAccessible(true); target.set(app,deployment);
+                call(app,"rememberDeploymentSite",new Class[]{String.class,String.class},url,"");
+                call(app,"finish",new Class[]{boolean.class,boolean.class,String.class},true,false,"已验证");
+            } catch (Exception error) { throw new RuntimeException(error); }
+        });
+        require(sites().size()==2 && site("custom.test")!=null && site("legacy.test")!=null,"Custom domain replaces only its Pages address");
+        require(find(app.getWindow().getDecorView(),"custom.test  →")!=null,"List refreshes after domain becomes active");
+        ActivityMonitor monitor = addMonitor("org.openproxysetup.SiteBrowserActivity",null,false);
+        runOnMainSync(() -> {
+            try { call(app,"openDashboard",new Class[]{String.class},url); }
+            catch (Exception error) { throw new RuntimeException(error); }
+        });
+        Activity browser = monitor.waitForActivityWithTimeout(10000);
+        require(browser!=null && sites().size()==2,"Opening the Pages fallback leaves the saved custom domain in place");
+        runOnMainSync(browser::finish);
+    }
     @Override public void onStart(){
         Bundle result=new Bundle();
         try{
-            if(mode.equals("prepare"))seedLegacy();
+            if(mode.equals("prepare") || mode.equals("deployment"))seedLegacy();
             app=startActivitySync(new Intent(Intent.ACTION_MAIN).setClassName("org.openproxysetup","org.openproxysetup.MainActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             waitForIdleSync();require((Integer)field(app,"screen")==6,"Management mode restored");
-            if(mode.equals("prepare")){
+            if(mode.equals("deployment")) {
+                testDeploymentSite();
+            } else if(mode.equals("prepare")){
                 require(sites().size()==1,"Legacy single site migrated");
                 CookieManager.getInstance().setCookie("https://alpha.test/","auth=old-valid; Path=/; Max-Age=86400; Secure");CookieManager.getInstance().flush();
                 tap("＋ 添加站点");enter("alpha.test","wrong-password");

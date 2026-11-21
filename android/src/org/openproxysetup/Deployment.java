@@ -1,6 +1,7 @@
 package org.openproxysetup;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -8,7 +9,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.Collections;
@@ -16,10 +19,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.IntConsumer;
+import javax.net.ssl.SSLException;
 
 final class Deployment {
     private static final String CLOUDFLARE = "https://api.cloudflare.com/client/v4/accounts/";
     private static final String DNSHE = "https://api005.dnshe.com/index.php?m=domain_hub";
+    private static final int READ_TIMEOUT_MS = 30_000;
+    private static final int PAGES_UPLOAD_TIMEOUT_MS = 120_000;
     private final String accountUrl;
     private final String project = "openproxysetup-" + UUID.randomUUID().toString().substring(0, 13).replace("-", "");
     private final byte[] worker;
@@ -45,6 +51,11 @@ final class Deployment {
     void verify(String token) throws Exception {
         cloudflare("验证 Pages 权限", "/pages/projects?per_page=1", "GET", token, null);
         cloudflare("验证 KV 权限", "/storage/kv/namespaces?per_page=10", "GET", token, null);
+    }
+
+    static JSONArray listAccounts(String token, int page) throws Exception {
+        return jsonRequest("读取已授权账号", "https://api.cloudflare.com/client/v4/accounts?per_page=50&page=" + page,
+                "GET", bearer(token), null).getJSONArray("result");
     }
 
     void deploy(String token, String password, IntConsumer progress) throws Exception {
@@ -107,7 +118,8 @@ final class Deployment {
             part(form, boundary, "_worker.js", "_worker.js", worker);
             form.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
             deploymentId = request("上传 Pages", accountUrl + path() + "/deployments", "POST",
-                    bearer(token), "multipart/form-data; boundary=" + boundary, form.toByteArray())
+                    bearer(token), "multipart/form-data; boundary=" + boundary, form.toByteArray(),
+                    PAGES_UPLOAD_TIMEOUT_MS)
                     .getJSONObject("result").getString("id");
         }
         for (int attempt = 0; attempt < 8; attempt++) {
@@ -197,11 +209,17 @@ final class Deployment {
 
     private static JSONObject request(String label, String url, String method, Map<String, String> headers,
                                       String contentType, byte[] body) throws Exception {
+        return request(label, url, method, headers, contentType, body, READ_TIMEOUT_MS);
+    }
+
+    private static JSONObject request(String label, String url, String method, Map<String, String> headers,
+                                      String contentType, byte[] body, int readTimeoutMs) throws Exception {
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+        boolean awaitingResponse = false;
         try {
             connection.setInstanceFollowRedirects(false);
             connection.setConnectTimeout(15_000);
-            connection.setReadTimeout(30_000);
+            connection.setReadTimeout(readTimeoutMs);
             connection.setRequestMethod(method);
             connection.setRequestProperty("Accept", "application/json");
             headers.forEach(connection::setRequestProperty);
@@ -213,6 +231,7 @@ final class Deployment {
                     output.write(body);
                 }
             }
+            awaitingResponse = true;
             int status = connection.getResponseCode();
             if (status < 200 || status >= 300) throw new RequestException(label, status);
             try (InputStream input = connection.getInputStream()) {
@@ -222,8 +241,18 @@ final class Deployment {
             }
         } catch (RequestException error) {
             throw error;
-        } catch (Exception error) {
-            throw new IOException(label + "失败，请检查网络后重试。", error);
+        } catch (SocketTimeoutException error) {
+            String detail = awaitingResponse ? "等待服务响应超时" : "连接或发送请求超时";
+            throw new IOException(label + "失败（" + detail + "）。请稍后重试。", error);
+        } catch (UnknownHostException error) {
+            throw new IOException(label + "失败（无法解析服务域名）。请检查网络或 DNS 后重试。", error);
+        } catch (SSLException error) {
+            throw new IOException(label + "失败（HTTPS 连接错误）。请检查系统时间和网络后重试。", error);
+        } catch (JSONException error) {
+            throw new IOException(label + "失败（服务返回了无法读取的响应）。请稍后重试。", error);
+        } catch (IOException error) {
+            String detail = awaitingResponse ? "接收服务响应时连接中断" : "连接或发送请求时网络中断";
+            throw new IOException(label + "失败（" + detail + "）。请检查网络后重试。", error);
         } finally {
             connection.disconnect();
         }
