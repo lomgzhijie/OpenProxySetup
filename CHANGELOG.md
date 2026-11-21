@@ -1,5 +1,22 @@
 # 更新记录
 
+## Android v0.3.11
+
+- 正式构建要求已有签名密钥，通过进程环境变量读取密码，并验证签名证书指纹。
+- 测试构建使用独立密钥，支持 Windows PowerShell 与 Linux PowerShell。
+- 沿用已发布应用的签名身份，支持覆盖升级，并与官网 App Links 证书指纹保持一致。
+- Android CI 编译测试 APK，并在模拟器运行 OAuth、部署页面、多个站点管理及重启持久化回归。
+- 改进模拟器测试的界面等待及 Activity 退出等待，避免读取尚未就绪的窗口。
+- 四种语言的 README 和官网文档增加首次部署优先使用 Windows 的建议，以及 Windows 与 Android 对比表。
+
+## Android v0.3.10
+
+- 增加 Cloudflare 浏览器 OAuth 授权，使用 PKCE S256、随机 state、单次回调验证和令牌续期，并保留手动 API Token 入口。
+- 官网增加授权回调页和 Android App Links 配置，支持返回应用完成授权。
+- 顶部四个部署步骤支持点击切换，开始部署前检查 Cloudflare 授权。
+- 自定义域名验证成功后替换同次部署保存的临时 Pages 地址，打开临时后台时保留已保存的自定义域名。
+- Pages 上传响应等待时间延长至 120 秒，区分超时、DNS、HTTPS、连接中断和异常响应。
+
 ## v1.4.3 / Android v0.3.7
 
 - 部署与管理分成独立页面，可从右上角切换。
