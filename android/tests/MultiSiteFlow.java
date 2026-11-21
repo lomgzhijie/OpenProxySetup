@@ -166,6 +166,10 @@ public final class MultiSiteFlow extends Instrumentation {
                 require(field(site("alpha.test"),"password").equals("correct-password"),"Wrong edited password does not overwrite saved password");
                 tap("返回站点列表");tap("部署");require(!(Boolean)field(app,"managementMode"),"Deployment page switch");
                 tap("管理");require((Boolean)field(app,"managementMode")&&sites().size()==3,"Management switch preserves sites");
+                // Let Android complete the normal Activity shutdown before instrumentation ends the process.
+                runOnMainSync(app::finish);
+                for (int i=0;i<50&&!app.isDestroyed();i++) SystemClock.sleep(100);
+                require(app.isDestroyed(),"Activity shut down before persistence test");
             } else {
                 require(sites().size()==3,"Multiple sites survive process restart");
                 require(field(site("alpha.test"),"password").equals("correct-password"),"Credentials survive restart");
