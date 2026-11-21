@@ -10,6 +10,21 @@ The project provides a deployment wizard. Each user deploys to their own Cloudfl
 
 The app checks for updates at startup and shows a dialog when a newer version is available. Choose Download update, Visit website, or Later. You can also check manually from the Android home screen or the Windows footer. Open the downloaded installer to update. This feature starts with Android v0.3.5 and Windows v1.4.1.
 
+## Choose a platform
+
+**We recommend using a Windows computer for your first deployment.** A larger screen and keyboard make it easier to enter domains, compare Cloudflare and DNSHE pages, copy credentials, and read error messages. You can also complete deployment and site management on Android when using a phone.
+
+| Comparison | Windows | Android |
+|---|---|---|
+| System | Windows 10/11, x64 | Android 8.0 or later |
+| Cloudflare authorization | Browser authorization through Wrangler | Browser OAuth or a manually entered API token |
+| Initial setup | Keyboard and multiple windows help with first-time setup and troubleshooting | Touch input with switching between the app and browser |
+| Deployment | Create KV and Pages, set the admin password, and bind a DNSHE domain | Create KV and Pages, set the admin password, and bind a DNSHE domain |
+| Site management | Multiple sites, password verification, in-app dashboards, and light/dark mode | Multiple sites, password verification, in-app dashboards, and light/dark mode |
+| Distribution | EXE installer, portable ZIP, and CMD edition | Installable APK |
+
+Both platforms need network access to Cloudflare and DNSHE. The deployed site can be used with compatible clients. Choose the deployment platform that suits your workflow.
+
 ## Android APK
 
 ### Download and install
