@@ -14,7 +14,7 @@ OpenProxySetup 提供 Windows 和 Android 部署向导。用户授权自己的 C
 
 ### 下载和安装
 
-支持 **Android 8.0 及以上**。下载 [Android v0.3.10 安装包](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.10.apk) 后，在手机上打开 APK 安装。已安装旧版可直接覆盖安装。
+支持 **Android 8.0 及以上**。下载 [Android v0.3.11 安装包](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.11.apk) 后，在手机上打开 APK 安装。已安装旧版可直接覆盖安装。
 
 ### 首次部署
 

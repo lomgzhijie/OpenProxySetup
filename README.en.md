@@ -14,7 +14,7 @@ The app checks for updates at startup and shows a dialog when a newer version is
 
 ### Download and install
 
-Requires **Android 8.0 or later**. Download the [Android v0.3.10 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.10.apk) and open it on your phone to install or update the app.
+Requires **Android 8.0 or later**. Download the [Android v0.3.11 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.11.apk) and open it on your phone to install or update the app.
 
 ### First deployment
 

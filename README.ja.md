@@ -14,7 +14,7 @@ OpenProxySetup は Windows と Android 向けのデプロイウィザードで�
 
 ### ダウンロードとインストール
 
-**Android 8.0 以降**に対応しています。[Android v0.3.10 の APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.10.apk) をダウンロードし、スマートフォンで開いてインストールまたは更新します。
+**Android 8.0 以降**に対応しています。[Android v0.3.11 の APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.11.apk) をダウンロードし、スマートフォンで開いてインストールまたは更新します。
 
 ### 初回デプロイ
 

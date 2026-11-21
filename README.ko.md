@@ -14,7 +14,7 @@ OpenProxySetup은 Windows와 Android용 배포 마법사를 제공합니다. 본
 
 ### 다운로드 및 설치
 
-**Android 8.0 이상**을 지원합니다. [Android v0.3.10 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.10.apk)를 내려받아 휴대전화에서 열면 앱을 설치하거나 업데이트할 수 있습니다.
+**Android 8.0 이상**을 지원합니다. [Android v0.3.11 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.11.apk)를 내려받아 휴대전화에서 열면 앱을 설치하거나 업데이트할 수 있습니다.
 
 ### 처음 배포하기
 
