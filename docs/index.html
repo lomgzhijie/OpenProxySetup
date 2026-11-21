@@ -53,15 +53,15 @@
 <p>启动时会自动检查新版本，发现更新后弹窗提示，可选「下载更新」「前往官网」或「稍后」。Android 首页和 Windows 窗口底部也有「检查更新」。下载后运行安装包更新，Android 可覆盖安装。首次使用此功能需先安装 Android v0.3.5 或 Windows v1.4.1。</p>
 <h2 id="android-安装版">Android 安装版</h2>
 <h3>下载和安装</h3>
-<p>支持 <strong>Android 8.0 及以上</strong>。下载 <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.7.apk">Android v0.3.7 安装包</a> 后，在手机上打开 APK 安装。已安装旧版可直接覆盖安装。</p>
+<p>支持 <strong>Android 8.0 及以上</strong>。下载 <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.10.apk">Android v0.3.10 安装包</a> 后，在手机上打开 APK 安装。已安装旧版可直接覆盖安装。</p>
 <h3>首次部署</h3>
 <ol>
-<li><strong>授权 Cloudflare。</strong> 在应用第 1 步点「打开 API Token 页面」。创建令牌时选「从头开始（Custom）→ 从 Account 策略开始」，账户范围选要部署的账号。添加 <code>Pages Write</code>（Cloudflare Pages 编辑）和 <code>Workers KV Storage Write</code> 两项权限，创建后复制令牌。</li>
-<li><strong>填写 Account ID。</strong> 点应用里的「打开 Cloudflare 查看 Account ID」，在 Workers &amp; Pages 的「账户详情」里复制 32 位 Account ID。回到应用，把 ID 和令牌分别粘贴到对应输入框，再点「验证授权并继续」。</li>
+<li><strong>授权 Cloudflare。</strong> 点「在浏览器授权 Cloudflare」，用自己的 Cloudflare 账号登录并同意授权。返回应用后选择要部署的账户（如果出现账户列表）。</li>
+<li><strong>可选：使用 API Token。</strong> 在自己的目标账户上创建拥有 <code>Pages Write</code> 和 <code>Workers KV Storage Write</code> 的令牌。把令牌和「账户详情」里的 32 位 Account ID 填入应用，再点「验证授权并继续」。顶部步骤可点击切换。</li>
 <li><strong>准备 DNSHE 域名。</strong> 在第 2 步打开 DNSHE，注册新域名或从「我的域名」复制已注册的完整域名，例如 <code>myhome.ccwu.cc</code>。</li>
 <li><strong>创建 DNSHE 授权。</strong> 在 DNSHE 手机网页展开上方「域名管理」，在「功能导航」里点带钥匙图标的「API 管理」，创建并复制 API Key 和 API Secret。</li>
 <li><strong>开始部署。</strong> 在第 4 步填写完整域名、API Key 和 API Secret，再设置至少 12 个字符的后台管理员密码，点「开始自动部署」。暂时没有域名时，可选「暂时只发布 Pages」，以后再绑定。</li>
-<li><strong>打开站点后台。</strong> Pages 发布后可先点「打开 Pages 后台」，用刚设置的密码登录。自定义域名验证建议预留约 5 分钟。等满 1 分钟还在等待时，可点「重新验证」查询状态。验证成功后即可打开自定义域名后台。</li>
+<li><strong>打开站点后台。</strong> Pages 发布后可先点「打开 Pages 后台」，用刚设置的密码登录。自定义域名验证建议预留约 5 分钟。等满 1 分钟还在等待时，可点「重新验证」查询状态。验证成功后即可打开自定义域名后台。 自定义域名验证成功后，Android 会用它替换同一次部署保存的 <code>pages.dev</code> 临时地址。</li>
 </ol>
 <h3>管理已有站点</h3>
 <p>Windows 与 Android 均提供独立的「部署」和「管理」页面，可在右上角切换。管理列表只显示域名，支持保存多个站点，以及添加、编辑和移除。旧版保存的单个站点会自动迁移。</p>

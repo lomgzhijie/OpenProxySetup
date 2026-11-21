@@ -53,15 +53,15 @@
 <p>The app checks for updates at startup and shows a dialog when a newer version is available. Choose Download update, Visit website, or Later. You can also check manually from the Android home screen or the Windows footer. Open the downloaded installer to update. This feature starts with Android v0.3.5 and Windows v1.4.1.</p>
 <h2 id="android-apk">Android APK</h2>
 <h3>Download and install</h3>
-<p>Requires <strong>Android 8.0 or later</strong>. Download the <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.7.apk">Android v0.3.7 APK</a> and open it on your phone to install or update the app.</p>
+<p>Requires <strong>Android 8.0 or later</strong>. Download the <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.10.apk">Android v0.3.10 APK</a> and open it on your phone to install or update the app.</p>
 <h3>First deployment</h3>
 <ol>
-<li><strong>Authorize Cloudflare.</strong> In step 1, open the API Token page. Start from scratch with an account policy and select the account you want to deploy to. Grant <code>Pages Write</code> and <code>Workers KV Storage Write</code>, then create and copy the token.</li>
-<li><strong>Enter your Account ID.</strong> Use the app’s Account ID link to open Workers &amp; Pages. Copy the 32-character Account ID from Account Details. Paste the ID and token into their separate fields, then verify access and continue.</li>
+<li><strong>Authorize Cloudflare.</strong> Tap <strong>Authorize Cloudflare in the browser</strong>, sign in with your own account, and approve access. Back in the app, select the deployment account if prompted.</li>
+<li><strong>Optional: use an API token.</strong> Create a token with <code>Pages Write</code> and <code>Workers KV Storage Write</code> for your deployment account. Enter the token and the 32-character Account ID from Account Details, then verify and continue. Tap any step at the top to switch between steps.</li>
 <li><strong>Prepare a DNSHE domain.</strong> In step 2, open DNSHE and register a domain, or copy the full name of an existing domain, such as <code>myhome.ccwu.cc</code>.</li>
 <li><strong>Create DNSHE API credentials.</strong> On the DNSHE mobile site, expand Domain Management and find API Management in the navigation menu. Create an API key and copy both the API Key and API Secret.</li>
 <li><strong>Start deployment.</strong> In step 4, enter the full domain, API Key, and API Secret. Set an administrator password of at least 12 characters, then start deployment. To add a domain later, choose <strong>暂时只发布 Pages</strong> (Publish Pages only for now).</li>
-<li><strong>Open the site dashboard.</strong> After publication, you can sign in to the <code>pages.dev</code> dashboard using the password you just set. Allow about five minutes for custom domain validation. After one minute, you can tap <strong>重新验证</strong> (Recheck) to query the status. Once validation succeeds, open the dashboard at your custom domain.</li>
+<li><strong>Open the site dashboard.</strong> After publication, you can sign in to the <code>pages.dev</code> dashboard using the password you just set. Allow about five minutes for custom domain validation. After one minute, you can tap <strong>重新验证</strong> (Recheck) to query the status. Once validation succeeds, open the dashboard at your custom domain. After the custom domain is verified, Android replaces the saved temporary <code>pages.dev</code> address for that deployment with your custom domain.</li>
 </ol>
 <h3>Manage an existing site</h3>
 <p>Windows and Android have separate Deploy and Manage pages, with a switch in the top-right corner. The management list shows domain names and supports multiple saved sites, including adding, editing, and removing entries. Existing single-site records migrate automatically.</p>

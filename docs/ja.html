@@ -53,15 +53,15 @@
 <p>起動時に新しいバージョンを確認し、更新があればダイアログを表示します。「下载更新」（更新をダウンロード）、「前往官网」（公式サイト）、「稍后」（後で）を選べます。Android のホーム画面や Windows のウィンドウ下部からも確認できます。ダウンロードしたインストーラーを開いて更新します。この機能は Android v0.3.5 と Windows v1.4.1 以降で利用できます。</p>
 <h2 id="android-版-apk">Android 版 APK</h2>
 <h3>ダウンロードとインストール</h3>
-<p><strong>Android 8.0 以降</strong>に対応しています。<a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.7.apk">Android v0.3.7 の APK</a> をダウンロードし、スマートフォンで開いてインストールまたは更新します。</p>
+<p><strong>Android 8.0 以降</strong>に対応しています。<a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.10.apk">Android v0.3.10 の APK</a> をダウンロードし、スマートフォンで開いてインストールまたは更新します。</p>
 <h3>初回デプロイ</h3>
 <ol>
-<li><strong>Cloudflare を認証します。</strong> 手順 1 で API トークンのページを開きます。新規作成で Account ポリシーを選び、デプロイ先のアカウントに <code>Pages Write</code> と <code>Workers KV Storage Write</code> を付与します。トークンを作成してコピーします。</li>
-<li><strong>Account ID を入力します。</strong> アプリ内の Account ID 用リンクから Workers &amp; Pages を開き、「アカウントの詳細」で 32 文字の Account ID をコピーします。アプリに戻り、ID とトークンを別々の欄に貼り付けて認証を確認します。</li>
+<li><strong>Cloudflare を認証します。</strong> 「在浏览器授权 Cloudflare」をタップし、自分の Cloudflare アカウントでログインして許可します。アプリに戻り、選択画面が表示された場合はデプロイ先のアカウントを選びます。</li>
+<li><strong>任意：API トークンを使います。</strong> デプロイ先のアカウントに <code>Pages Write</code> と <code>Workers KV Storage Write</code> を付与したトークンを作成します。トークンと「アカウントの詳細」に表示される 32 文字の Account ID を入力し、認証を確認します。画面上部の番号をタップして手順を切り替えられます。</li>
 <li><strong>DNSHE ドメインを用意します。</strong> 手順 2 で DNSHE を開き、ドメインを登録します。登録済みの場合は、<code>myhome.ccwu.cc</code> のような完全なドメイン名をコピーします。</li>
 <li><strong>DNSHE の API 認証情報を作成します。</strong> DNSHE のモバイルサイトでドメイン管理のメニューを開き、鍵アイコンの API 管理を選びます。認証情報を作成し、API Key と API Secret をコピーします。</li>
 <li><strong>デプロイを開始します。</strong> 手順 4 でドメイン名、API Key、API Secret を入力し、12 文字以上の管理者パスワードを設定します。ドメインを後から追加する場合は、「暂时只发布 Pages」で Pages のみ公開できます。</li>
-<li><strong>サイトの管理画面を開きます。</strong> 公開後は <code>pages.dev</code> の管理画面に、設定したパスワードでログインできます。カスタムドメインの検証には約 5 分を見込んでください。1 分経過すると「重新验证」から状態を確認できます。検証が完了したらカスタムドメインの管理画面を開けます。</li>
+<li><strong>サイトの管理画面を開きます。</strong> 公開後は <code>pages.dev</code> の管理画面に、設定したパスワードでログインできます。カスタムドメインの検証には約 5 分を見込んでください。1 分経過すると「重新验证」から状態を確認できます。検証が完了したらカスタムドメインの管理画面を開けます。 カスタムドメインの検証が完了すると、Android は同じデプロイで保存した一時的な <code>pages.dev</code> アドレスをカスタムドメインに置き換えます。</li>
 </ol>
 <h3>既存サイトを管理する</h3>
 <p>Windows と Android には「部署」（デプロイ）と「管理」の独立したページがあり、右上で切り替えられます。管理一覧にはドメイン名のみを表示し、複数サイトの追加・編集・削除に対応しています。旧版で保存した単一サイトの情報は自動で移行されます。</p>
