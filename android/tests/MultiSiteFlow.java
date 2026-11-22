@@ -99,6 +99,23 @@ public final class MultiSiteFlow extends Instrumentation {
         }
         throw new AssertionError("Visible feedback did not appear: "+text);
     }
+    void tapDialog(String text) {
+        waitForText(text);
+        AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();
+        for(AccessibilityNodeInfo node:root.findAccessibilityNodeInfosByText(text))
+            if(text.contentEquals(node.getText())&&node.performAction(AccessibilityNodeInfo.ACTION_CLICK)){waitForIdleSync();return;}
+        throw new AssertionError("Missing dialog action: "+text);
+    }
+    void testNetworkNotice() throws Exception {
+        runOnMainSync(()->{try{call(app,"render",new Class[]{int.class},0);}catch(Exception e){throw new RuntimeException(e);}});
+        require(!textContents(app.getWindow().getDecorView()).contains("开始前"),"Home no longer has the static notice");
+        tap("开始部署  →");waitForText("Cloudflare 和 DNSHE");
+        picture("android-network-notice.png");
+        tapDialog("暂不部署");
+        require((Integer)field(app,"screen")==0,"Cancel remains on home");
+        tap("开始部署  →");tapDialog("已准备好，继续");
+        require((Integer)field(app,"screen")==1,"Confirmation enters authorization");
+    }
     void seedLegacy()throws Exception{
         Method key=store().getDeclaredMethod("key");key.setAccessible(true);
         javax.crypto.Cipher cipher=javax.crypto.Cipher.getInstance("AES/GCM/NoPadding");
@@ -238,10 +255,12 @@ public final class MultiSiteFlow extends Instrumentation {
     @Override public void onStart(){
         Bundle result=new Bundle();
         try{
-            if(mode.equals("prepare") || mode.equals("deployment") || mode.equals("convenience") || mode.equals("rename"))seedLegacy();
+            if(mode.equals("prepare") || mode.equals("deployment") || mode.equals("convenience") || mode.equals("rename") || mode.equals("network"))seedLegacy();
             app=startActivitySync(new Intent(Intent.ACTION_MAIN).setClassName("org.openproxysetup","org.openproxysetup.MainActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             waitForIdleSync();require((Integer)field(app,"screen")==6,"Management mode restored");
-            if(mode.equals("convenience")) {
+            if(mode.equals("network")) {
+                testNetworkNotice();
+            } else if(mode.equals("convenience")) {
                 testConvenience();
             } else if(mode.equals("deployment")) {
                 testDeploymentSite();

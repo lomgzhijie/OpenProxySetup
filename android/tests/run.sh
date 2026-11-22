@@ -46,6 +46,6 @@ install_test org.openproxysetup.oauthtest OAuthFlow
 run_test PKCE org.openproxysetup.oauthtest/.OAuthFlow
 
 install_test org.openproxysetup.sitetest MultiSiteFlow
-for mode in convenience rename deployment prepare persist; do
+for mode in network convenience rename deployment prepare persist; do
     run_test "$mode" -e mode "$mode" org.openproxysetup.sitetest/.MultiSiteFlow
 done

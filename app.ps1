@@ -1,7 +1,7 @@
 ﻿# Windows PowerShell 5.1 desktop wizard. Keep this file UTF-8 with BOM.
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-$script:appVersion = '1.4.4'
+$script:appVersion = '1.4.5'
 $deployScript = Join-Path $PSScriptRoot 'deploy.ps1'
 $bundledNode = Join-Path $PSScriptRoot 'runtime\node.exe'
 $bundledWrangler = Join-Path $PSScriptRoot 'runtime\node_modules\wrangler\bin\wrangler.js'
@@ -748,14 +748,36 @@ function Show-WizardPage($page) {
 $homePage = New-WizardPage
 Add-WizardPage $homePage '首页' 68
 $homeBody = New-Object Windows.Forms.Panel
-$homeBody.Bounds = New-Object Drawing.Rectangle(0,0,854,428)
+$homeBody.Bounds = New-Object Drawing.Rectangle(0,0,854,345)
 $homeBody.Anchor = 'Top,Left,Right'
 $homePage.Controls.Add($homeBody)
-$homePage.Tag = @{ Panel=$homeBody; Height=428; Top=0 }
+$homePage.Tag = @{ Panel=$homeBody; Height=345; Top=0 }
 $title = Add-Heading $homeBody ("部署自己的" + [Environment]::NewLine + "Cloudflare Pages 站点") 37 60 434 114 25
 $summary = Add-Text $homeBody '从浏览器授权、域名配置到打开站点后台，在一个 Windows 图形向导里完成。' 39 185 370 58
 $summary.ForeColor = $theme.Muted
-Add-Action $homeBody '开始部署  →' 39 263 156 { Show-WizardPage $authPage } $true
+function Start-DeploymentWizard {
+    $networkNotice = New-Object Windows.Forms.Form
+    $networkNotice.Text = '开始部署前'
+    $networkNotice.ClientSize = New-Object Drawing.Size(530,235)
+    $networkNotice.StartPosition = 'CenterParent'; $networkNotice.FormBorderStyle = 'FixedDialog'
+    $networkNotice.MaximizeBox = $false; $networkNotice.MinimizeBox = $false
+    $networkNotice.ShowInTaskbar = $false
+    $networkNotice.BackColor = $theme.Surface; $networkNotice.ForeColor = $theme.Ink
+    $networkNotice.Font = $form.Font
+    $networkText = Add-Text $networkNotice ("请先开启 VPN 或代理，并确认 Cloudflare 和 DNSHE 均可正常访问。" + [Environment]::NewLine + [Environment]::NewLine + "使用 VPN 或代理服务时，请遵守所在地适用的法律法规。") 24 24 482 130
+    $networkText.ForeColor = $theme.Ink
+    $continue = New-Object Windows.Forms.Button
+    $continue.Text = '已准备好，继续'; $continue.Bounds = New-Object Drawing.Rectangle(320,177,184,38)
+    $continue.DialogResult = 'OK'; Set-ButtonStyle $continue $true
+    $networkNotice.Controls.Add($continue); $networkNotice.AcceptButton = $continue
+    $cancel = New-Object Windows.Forms.Button
+    $cancel.Text = '暂不部署'; $cancel.Bounds = New-Object Drawing.Rectangle(174,177,132,38)
+    $cancel.DialogResult = 'Cancel'; Set-ButtonStyle $cancel
+    $networkNotice.Controls.Add($cancel); $networkNotice.CancelButton = $cancel
+    try { if ($networkNotice.ShowDialog($form) -eq 'OK') { Show-WizardPage $authPage } }
+    finally { $networkNotice.Dispose() }
+}
+Add-Action $homeBody '开始部署  →' 39 263 156 { Start-DeploymentWizard } $true
 Add-Action $homeBody '管理已有站点' 209 263 152 { Show-WizardPage $managePage }
 
 $workflow = Add-Card $homeBody 469 39 346 292 $theme.PaleBlue 22
@@ -778,12 +800,6 @@ for ($i = 0; $i -lt $flow.Count; $i++) {
     $detail = Add-Text $workflowCard $flow[$i].Detail 65 ($y+27) 223 24
     $detail.ForeColor = $theme.Muted
 }
-$notice = Add-Card $homeBody 34 345 781 75 $theme.Surface
-$notice.Anchor = 'Top,Left,Right'
-[void](Add-Heading $notice '开始前' 20 9 700 29 13)
-$legal = Add-Text $notice '请准备可访问 Cloudflare 的 VPN 环境。使用 VPN 或代理服务时，请遵守所在地适用的法律法规。' 20 38 733 30
-$legal.ForeColor = $theme.Muted
-$legal.Anchor = 'Top,Left,Right'
 
 $guideCards = @{}
 function Add-GuidePage([string]$title,[string]$body,[string]$linkText,[string]$url,[string]$caption,[int]$width,[bool]$withActions = $false) {
@@ -1514,7 +1530,10 @@ $next.Location = New-Object Drawing.Point(721,11)
 $next.Size = New-Object Drawing.Size(147,40)
 Set-ButtonStyle $next $true
 $next.Anchor = 'Top,Right'
-$next.add_Click({ Show-WizardPage $script:pages[($script:pages.IndexOf($script:currentPage) + 1)] })
+$next.add_Click({
+    if ($script:currentPage -eq $homePage) { Start-DeploymentWizard }
+    else { Show-WizardPage $script:pages[($script:pages.IndexOf($script:currentPage) + 1)] }
+})
 $footer.Controls.Add($next)
 
 $script:deployment = $null

@@ -98,7 +98,7 @@ The Windows embedded dashboard requires Microsoft Edge WebView2 Runtime, normall
 
 ## Install and use on Windows
 
-The home screen shows a legal notice and offers direct access to the admin dashboard. Successful deployments are added to the site list automatically. Existing sites can be added and verified manually. Switch to Manage at the top right to open a saved site or add and verify another site.
+Selecting Start deployment on the home screen opens a reminder to enable a VPN or proxy that can reach both Cloudflare and DNSHE, and to follow applicable local laws. The admin dashboard remains directly accessible. Successful deployments are added to the site list automatically. Existing sites can be added and verified manually. Switch to Manage at the top right to open a saved site or add and verify another site.
 
 1. Download the [Windows x64 installer](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-windows-x64-setup.exe), double-click it, and select an installation location. Setup creates a `自建机场` folder and opens the wizard. To reopen the app, double-click `OpenProxySetup.exe` in that folder.
 2. In step 1, select “开始 Cloudflare 授权” (Start Cloudflare authorization), sign up for or sign in to [Cloudflare](https://dash.cloudflare.com/sign-up) in your browser, and complete authorization. Return to the wizard and select “我已完成授权，继续” (I’ve authorized, continue). Once authorization is confirmed, obtain a domain from [DNSHE](https://my.dnshe.com/) in step 2 and create an API Key and API Secret under Domain Management → API Management in step 3. Enter your Cloudflare credentials on the Cloudflare website.

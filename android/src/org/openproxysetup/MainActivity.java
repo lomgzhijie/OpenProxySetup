@@ -253,17 +253,24 @@ public final class MainActivity extends Activity {
         heading("部署自己的\nCloudflare Pages 站点");
         copy("在手机上完成 Cloudflare 授权、DNSHE 域名配置和站点部署。");
         button(runAttempted ? "查看本次部署  →" : "开始部署  →", true,
-                () -> render(runAttempted ? PROGRESS : AUTH));
+                () -> { if (runAttempted) render(PROGRESS); else confirmDeploymentNetwork(); });
         card();
         title("部署流程");
         guideLine("1", "授权 Cloudflare", "连接你自己的账号");
         guideLine("2", "准备 DNSHE 域名", "注册域名并创建 API 授权");
         guideLine("3", "部署并管理", "发布 Pages，绑定域名，打开后台");
         card();
-        title("开始前");
-        copy("请确认手机网络可以访问 Cloudflare。使用 VPN 或代理服务时，请遵守所在地适用的法律法规。");
+        title("更多");
         button("项目网站 ↗", false, () -> open(SITE));
         button("检查更新 · v" + currentVersion(), false, () -> checkForUpdates(true));
+    }
+
+    private void confirmDeploymentNetwork() {
+        dialog().setTitle("开始部署前")
+                .setMessage("请先开启 VPN 或代理，并确认 Cloudflare 和 DNSHE 均可正常访问。\n\n使用 VPN 或代理服务时，请遵守所在地适用的法律法规。")
+                .setNegativeButton("暂不部署", null)
+                .setPositiveButton("已准备好，继续", (notice, which) -> render(AUTH))
+                .show();
     }
 
     private String currentVersion() {

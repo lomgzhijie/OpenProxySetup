@@ -16,6 +16,22 @@ $source = $source.Replace('[Windows.Forms.Clipboard]::ContainsText()', '(![strin
 # Exercise the account selection controls without a modal desktop on hosted runners.
 $source = $source.Replace('$picker.ShowDialog($form)',
     '$( $options.SelectedIndex = 1; [Windows.Forms.DialogResult]::OK )')
+$source = $source.Replace('$networkNotice.ShowDialog($form)', @'
+$(
+    $global:opsNetworkText = $networkText.Text
+    if ($env:OPS_NETWORK_SCREENSHOT) {
+        $networkNotice.Show()
+        $networkNotice.Refresh()
+        [Windows.Forms.Application]::DoEvents()
+        $image = New-Object Drawing.Bitmap($networkNotice.Width,$networkNotice.Height)
+        try {
+            $networkNotice.DrawToBitmap($image,(New-Object Drawing.Rectangle(0,0,$networkNotice.Width,$networkNotice.Height)))
+            $image.Save($env:OPS_NETWORK_SCREENSHOT,[Drawing.Imaging.ImageFormat]::Png)
+        } finally { $image.Dispose(); $networkNotice.Hide() }
+    }
+    $global:opsNetworkResult
+)
+'@)
 $source = $source.Replace("'OpenProxySetup\theme.txt'", ("'" + [guid]::NewGuid().ToString('N') + "\theme.txt'"))
 
 try {
@@ -39,6 +55,16 @@ try {
     }
     function Start-AppUpdateCheck { }
     Write-Host 'Wizard controls initialized without a desktop window'
+    Show-WizardPage $homePage
+    $global:opsNetworkResult = [Windows.Forms.DialogResult]::Cancel
+    Invoke-TestClick ($homeBody.Controls | Where-Object Text -eq '开始部署  →')
+    if ($script:currentPage -ne $homePage -or $global:opsNetworkText -notmatch 'VPN' -or
+            $global:opsNetworkText -notmatch 'Cloudflare' -or $global:opsNetworkText -notmatch 'DNSHE') {
+        throw 'Network reminder cancellation or service guidance failed'
+    }
+    $global:opsNetworkResult = [Windows.Forms.DialogResult]::OK
+    Invoke-TestClick $next
+    if ($script:currentPage -ne $authPage) { throw 'Network reminder confirmation did not enter authorization' }
     Show-WizardPage $deployPage
     $script:deployment = $null
     $env:CLOUDFLARE_ACCOUNT_ID = $null
@@ -108,6 +134,7 @@ try {
 } finally {
     if ($form) { $form.Close(); $form.Dispose() }
     Remove-Variable opsWizardTestClipboard -Scope Global -ErrorAction SilentlyContinue
+    Remove-Variable opsNetworkText,opsNetworkResult -Scope Global -ErrorAction SilentlyContinue
     $resolved = [IO.Path]::GetFullPath($temporary)
     if ($resolved.StartsWith([IO.Path]::GetFullPath($env:TEMP) + '\',[StringComparison]::OrdinalIgnoreCase)) {
         Remove-Item -LiteralPath $resolved -Recurse -Force
