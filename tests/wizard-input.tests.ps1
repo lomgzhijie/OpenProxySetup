@@ -10,8 +10,9 @@ $source = $source.Replace($storeLine, $storeLine + [Environment]::NewLine +
     "function Get-SiteStorePath { '" + $isolatedPath.Replace("'","''") + "' }")
 $source = $source.Replace('[void]$form.ShowDialog()', '')
 $source = $source.Replace('[Windows.Forms.Clipboard]::SetText(', '(Set-TestClipboardText ')
-$source = $source.Replace('$picker.AcceptButton = $confirm',
-    '$picker.AcceptButton = $confirm; $picker.add_Shown({ $options.SelectedIndex = 1; $confirm.PerformClick() })')
+# Exercise the account selection controls without a modal desktop on hosted runners.
+$source = $source.Replace('$picker.ShowDialog($form)',
+    '$( $options.SelectedIndex = 1; [Windows.Forms.DialogResult]::OK )')
 $source = $source.Replace("'OpenProxySetup\theme.txt'", ("'" + [guid]::NewGuid().ToString('N') + "\theme.txt'"))
 
 try {

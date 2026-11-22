@@ -32,6 +32,7 @@ jobs:
         shell: powershell
         run: ./tests/deploy-options.tests.ps1
       - name: Check wizard inputs
+        timeout-minutes: 3
         shell: powershell
         run: ./tests/wizard-input.tests.ps1
       - name: Check embedded README rendering
