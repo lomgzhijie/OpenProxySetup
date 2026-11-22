@@ -1,8 +1,50 @@
-# 自建机场
+<div align="center">
+  <img src="assets/readme/icon.png" width="96" height="96" alt="Open Proxy Setup" />
+  <h1>Open Proxy Setup</h1>
+  <p><strong>自分の Cloudflare アカウントで、サイトのデプロイと管理を手軽に。</strong></p>
+  <p>Windows・Android 向けウィザード · ブラウザー認証 · 複数サイト管理 · ライト／ダークモード</p>
+  <p>
+    <a href="README.md">简体中文</a> ·
+    <a href="README.en.md">English</a> ·
+    <a href="README.ja.md">日本語</a> ·
+    <a href="README.ko.md">한국어</a>
+  </p>
+  <p>
+    <a href="https://openproxysetup.ccwu.cc/">公式サイト</a> ·
+    <a href="https://openproxysetup.ccwu.cc/docs/ja.html">ドキュメント</a> ·
+    <a href="CHANGELOG.md">変更履歴</a> ·
+    <a href="https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose">問題を報告</a>
+  </p>
+  <p>
+    <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/latest"><img src="https://img.shields.io/github/v/release/lomgzhijie/OpenProxySetup?style=flat-square&amp;color=4263eb" alt="Latest release" /></a>
+    <img src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?style=flat-square" alt="Windows 10 / 11" />
+    <img src="https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=flat-square" alt="Android 8.0+" />
+  </p>
+  <p>
+    <a href="https://github.com/lomgzhijie/OpenProxySetup/actions/workflows/check.yml"><img src="https://github.com/lomgzhijie/OpenProxySetup/actions/workflows/check.yml/badge.svg" alt="Windows checks" /></a>
+    <a href="https://github.com/lomgzhijie/OpenProxySetup/actions/workflows/android.yml"><img src="https://github.com/lomgzhijie/OpenProxySetup/actions/workflows/android.yml/badge.svg" alt="Android checks" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/Scripts-MIT-blue?style=flat-square" alt="Own scripts: MIT" /></a>
+    <a href="vendor/edgetunnel/LICENSE"><img src="https://img.shields.io/badge/edgetunnel-GPL--2.0-blue?style=flat-square" alt="edgetunnel: GPL-2.0" /></a>
+  </p>
+  <p>
+    <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-windows-x64-setup.exe"><strong>⬇ Windows をダウンロード</strong></a>
+    &nbsp; · &nbsp;
+    <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.11.apk"><strong>⬇ Android をダウンロード</strong></a>
+  </p>
+</div>
 
-[简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
+## 画面プレビュー
 
-[Windows x64 版をダウンロード](https://github.com/lomgzhijie/OpenProxySetup/releases/latest) · [Android 版 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/tag/v1.4.3) · [問題を報告](https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose) · [貢献する](CONTRIBUTING.md)
+<p align="center"><img src="assets/readme/windows-preview.png" width="960" alt="Windows デプロイウィザード" /></p>
+
+<details>
+<summary>Android の画面を表示</summary>
+<p align="center"><img src="assets/readme/android-preview.png" width="300" alt="Android 認証ウィザード" /></p>
+</details>
+
+以下は開発版の画面です。ダウンロードボタンは現在の公開リリースにリンクしています。
+
+## クイックスタート
 
 OpenProxySetup は Windows と Android 向けのデプロイウィザードです。自分の Cloudflare アカウントでログインし、管理者パスワードを設定します。アプリは同梱の [edgetunnel](https://github.com/cmliu/edgetunnel) ソースを使って Cloudflare KV と Pages を作成し、サイトのリンクを表示します。サイトの `/admin` を開き、設定したパスワードでログインすると、上流プロジェクトの管理画面でノードやサブスクリプションリンクを確認できます。
 
