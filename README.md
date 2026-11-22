@@ -28,9 +28,9 @@
     <a href="vendor/edgetunnel/LICENSE"><img src="https://img.shields.io/badge/edgetunnel-GPL--2.0-blue?style=flat-square" alt="edgetunnel: GPL-2.0" /></a>
   </p>
   <p>
-    <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-windows-x64-setup.exe"><strong>⬇ 下载 Windows</strong></a>
+    <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.5/OpenProxySetup-windows-x64-setup.exe"><strong>⬇ 下载 Windows</strong></a>
     &nbsp; · &nbsp;
-    <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-android-v0.3.13.apk"><strong>⬇ 下载 Android</strong></a>
+    <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.5/OpenProxySetup-android-v0.3.14.apk"><strong>⬇ 下载 Android</strong></a>
   </p>
 </div>
 
@@ -75,7 +75,7 @@ OpenProxySetup 提供 Windows 和 Android 部署向导。用户授权自己的 C
 
 ### 下载和安装
 
-支持 **Android 8.0 及以上**。下载 [Android v0.3.13 安装包](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-android-v0.3.13.apk) 后，在手机上打开 APK 安装。已安装旧版可直接覆盖安装。
+支持 **Android 8.0 及以上**。下载 [Android v0.3.14 安装包](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.5/OpenProxySetup-android-v0.3.14.apk) 后，在手机上打开 APK 安装。已安装旧版可直接覆盖安装。
 
 ### 首次部署
 
@@ -100,7 +100,7 @@ Windows 内置后台使用 Microsoft Edge WebView2 Runtime。Windows 11 通常�
 
 点击首页「开始部署」时会弹出网络提醒，请先开启可访问 Cloudflare 和 DNSHE 的 VPN／代理环境，并遵守所在地适用的法律法规。你也可直接进入「后台管理」。部署成功后会自动加入站点列表；已有站点可手动添加并验证。可在右上角切换到「管理」，从站点列表打开后台，或添加并验证其他站点。
 
-1. 下载 [Windows x64 安装程序](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-windows-x64-setup.exe)，双击运行并选择安装位置。安装程序会创建「自建机场」文件夹并打开部署向导。之后可从该目录双击 OpenProxySetup.exe。
+1. 下载 [Windows x64 安装程序](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.5/OpenProxySetup-windows-x64-setup.exe)，双击运行并选择安装位置。安装程序会创建「自建机场」文件夹并打开部署向导。之后可从该目录双击 OpenProxySetup.exe。
 2. 先在应用第 1 步点击「开始 Cloudflare 授权」，在浏览器注册或登录 [Cloudflare](https://dash.cloudflare.com/sign-up) 并完成授权，再回到向导点击「我已完成授权，继续」。授权验证后，在第 2 步从 [DNSHE](https://my.dnshe.com/) 获取域名，在第 3 步通过「域名管理 → API 管理」创建 API Key 和 API Secret。Cloudflare 账号密码只在 Cloudflare 网站输入。
 3. 在应用中填写 DNSHE 域名、API Key / Secret，并设置至少 12 位的后台管理员密码，然后点击部署。应用负责创建 KV、Pages、密钥并部署，然后向 Pages 提交自定义域名绑定，通过 DNSHE API 为该域名添加指向 `pages.dev` 的 CNAME。已有的冲突 DNS 记录不会被覆盖。
 4. 部署成功后点击应用显示的后台网址，输入刚才设置的密码。在后台复制需要的节点或订阅链接，导入兼容客户端。实际可用格式由部署时的上游版本决定。自定义域名生效前，先使用应用显示的 `pages.dev` 地址。
@@ -152,7 +152,7 @@ try {
 
 完整解压 `OpenProxySetup-windows-x64-portable.zip` 后，双击 `OpenProxySetup.exe`。EXE 与 runtime、vendor 及脚本应放在同一个目录。运行依赖 Windows 自带的 .NET Framework 和 Windows PowerShell 5.1。启动失败时，可运行 `启动应用.cmd` 查看错误。
 
-也可下载 [v1.4.4 CMD 版](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-windows-x64-cmd-v1.4.4.zip)，完整解压后双击 `OpenProxySetup.cmd`。
+也可下载 [v1.4.5 CMD 版](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.5/OpenProxySetup-windows-x64-cmd-v1.4.5.zip)，完整解压后双击 `OpenProxySetup.cmd`。
 
 ## 项目维护者打包
 

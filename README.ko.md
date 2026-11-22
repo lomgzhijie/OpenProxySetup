@@ -28,9 +28,9 @@
     <a href="vendor/edgetunnel/LICENSE"><img src="https://img.shields.io/badge/edgetunnel-GPL--2.0-blue?style=flat-square" alt="edgetunnel: GPL-2.0" /></a>
   </p>
   <p>
-    <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-windows-x64-setup.exe"><strong>⬇ Windows 다운로드</strong></a>
+    <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.5/OpenProxySetup-windows-x64-setup.exe"><strong>⬇ Windows 다운로드</strong></a>
     &nbsp; · &nbsp;
-    <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-android-v0.3.13.apk"><strong>⬇ Android 다운로드</strong></a>
+    <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.5/OpenProxySetup-android-v0.3.14.apk"><strong>⬇ Android 다운로드</strong></a>
   </p>
 </div>
 
@@ -75,7 +75,7 @@ OpenProxySetup은 Windows와 Android용 배포 마법사를 제공합니다. 본
 
 ### 다운로드 및 설치
 
-**Android 8.0 이상**을 지원합니다. [Android v0.3.13 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-android-v0.3.13.apk)를 내려받아 휴대전화에서 열면 앱을 설치하거나 업데이트할 수 있습니다.
+**Android 8.0 이상**을 지원합니다. [Android v0.3.14 APK](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.5/OpenProxySetup-android-v0.3.14.apk)를 내려받아 휴대전화에서 열면 앱을 설치하거나 업데이트할 수 있습니다.
 
 ### 처음 배포하기
 
@@ -100,7 +100,7 @@ Windows 내장 관리 화면에는 Microsoft Edge WebView2 Runtime이 필요합�
 
 홈에서 배포 시작을 누르면 Cloudflare와 DNSHE에 모두 접근할 수 있는 VPN 또는 프록시를 켜고 적용되는 현지 법규를 준수하라는 알림 창이 표시됩니다. 「后台管理」(관리 화면)로는 바로 이동할 수 있습니다. 배포에 성공하면 사이트가 관리 목록에 자동으로 추가됩니다. 오른쪽 위 「管理」에서 저장된 사이트를 열거나 다른 사이트를 추가·검증할 수 있습니다.
 
-1. [Windows x64 설치 프로그램](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-windows-x64-setup.exe)을 다운로드하고 실행한 뒤 설치 위치를 선택합니다. 설치 프로그램이 `自建机场` 폴더를 만들고 배포 마법사를 엽니다. 다음부터는 이 폴더의 `OpenProxySetup.exe`를 실행합니다.
+1. [Windows x64 설치 프로그램](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.5/OpenProxySetup-windows-x64-setup.exe)을 다운로드하고 실행한 뒤 설치 위치를 선택합니다. 설치 프로그램이 `自建机场` 폴더를 만들고 배포 마법사를 엽니다. 다음부터는 이 폴더의 `OpenProxySetup.exe`를 실행합니다.
 2. 1단계에서 ‘开始 Cloudflare 授权’을 눌러 브라우저에서 [Cloudflare](https://dash.cloudflare.com/sign-up)에 가입하거나 로그인하고 인증을 완료합니다. 마법사로 돌아와 ‘我已完成授权，继续’를 선택합니다. 인증이 확인되면 2단계에서 [DNSHE](https://my.dnshe.com/) 도메인을 발급받고 3단계의 ‘도메인 관리 → API 관리’에서 API Key와 API Secret을 만듭니다. Cloudflare 계정 정보는 Cloudflare 웹사이트에서 입력합니다.
 3. DNSHE 도메인, API Key, API Secret, 12자 이상의 관리자 비밀번호를 입력하고 배포를 시작합니다. 앱이 KV, Pages, 시크릿을 만들고 배포한 다음 Pages에 사용자 지정 도메인 연결을 요청합니다. DNSHE API로 `pages.dev`를 가리키는 CNAME도 추가합니다. 충돌하는 기존 DNS 레코드는 보존합니다.
 4. 배포가 끝나면 앱에 표시된 관리 주소를 열고 설정한 비밀번호로 로그인합니다. 관리 화면에서 노드 또는 구독 링크를 복사해 호환 클라이언트에 가져옵니다. 사용 가능한 형식은 배포에 사용한 업스트림 버전에 따라 달라집니다. 사용자 지정 도메인이 활성화될 때까지 앱에 표시된 `pages.dev` 주소를 사용할 수 있습니다.
@@ -132,7 +132,7 @@ CNAME을 추가하려면 DNSHE API Key와 API Secret이 필요합니다. 앱은 
 
 `OpenProxySetup-windows-x64-portable.zip`의 전체 압축을 푼 후 `OpenProxySetup.exe`를 더블 클릭합니다. EXE, `runtime`, `vendor`, 스크립트를 같은 폴더에 둡니다. Windows의 .NET Framework와 Windows PowerShell 5.1을 사용합니다. 시작에 실패하면 `启动应用.cmd`를 실행해 오류를 확인할 수 있습니다.
 
-[v1.4.4 CMD 버전](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-windows-x64-cmd-v1.4.4.zip)도 사용할 수 있습니다. ZIP 파일의 압축을 모두 풀고 `OpenProxySetup.cmd`를 더블 클릭하세요.
+[v1.4.5 CMD 버전](https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.5/OpenProxySetup-windows-x64-cmd-v1.4.5.zip)도 사용할 수 있습니다. ZIP 파일의 압축을 모두 풀고 `OpenProxySetup.cmd`를 더블 클릭하세요.
 
 ## 유지보수용 패키징
 
