@@ -25,8 +25,13 @@ function Get-SavedSites([string]$Path = (Get-SiteStorePath)) {
     }
     finally { [Array]::Clear($plain,0,$plain.Length) }
 }
-function Save-SavedSite([string]$Url, [string]$Password, [string]$Path = (Get-SiteStorePath), [string]$PreviousUrl = '') {
-    $sites = @([pscustomobject]@{ url=$Url; password=$Password }) + @(Get-SavedSites $Path | Where-Object { $_ -and $_.url -ne $Url -and $_.url -ne $PreviousUrl })
+function Save-SavedSite([string]$Url, [string]$Password, [string]$Path = (Get-SiteStorePath), [string]$PreviousUrl = '', [string]$Note) {
+    $existing = @(Get-SavedSites $Path)
+    if (-not $PSBoundParameters.ContainsKey('Note')) {
+        $prior = $existing | Where-Object { $_.url -eq $Url -or $_.url -eq $PreviousUrl } | Select-Object -First 1
+        $Note = if ($prior -and $prior.PSObject.Properties['note']) { $prior.note } else { '' }
+    }
+    $sites = @([pscustomobject]@{ url=$Url; password=$Password; note=$Note }) + @($existing | Where-Object { $_ -and $_.url -ne $Url -and $_.url -ne $PreviousUrl })
     Write-SavedSites $sites $Path
 }
 function Read-SavedSite([string]$Path = (Get-SiteStorePath)) {

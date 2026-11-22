@@ -1,5 +1,5 @@
 ﻿param([string]$ProjectName, [string]$Domain, [securestring]$AdminPassword, [securestring]$DnsheKey, [securestring]$DnsheSecret,
-      [hashtable]$Deployment)
+      [hashtable]$Deployment, [switch]$PagesOnly, [switch]$CheckDomainOnly)
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -55,7 +55,7 @@ function Read-WranglerJson([string[]]$Arguments) {
 }
 
 function Resolve-CloudflareAccount {
-    $accountId = $env:CLOUDFLARE_ACCOUNT_ID
+    $accountId = if ($Deployment.AccountId) { $Deployment.AccountId } else { $env:CLOUDFLARE_ACCOUNT_ID }
     $token = $env:CLOUDFLARE_API_TOKEN
     if ($token) {
         if ($accountId -notmatch '^[a-fA-F0-9]{32}$') {
@@ -84,21 +84,53 @@ function Resolve-CloudflareAccount {
     return $headers
 }
 
-function Get-KvId {
+function Get-KvId([string]$AccountUrl, [hashtable]$Headers) {
     $name = "$ProjectName-KV"
+    $uri = "$AccountUrl/storage/kv/namespaces"
+    $namespace = $null
     if ($Deployment.KvAttempted) {
-        $existing = @(Read-WranglerJson @('kv','namespace','list') | Where-Object title -eq $name)
-        if ($existing.Count -eq 1) { return $existing[0].id }
+        $search = [Uri]::EscapeDataString($name)
+        $page = 1
+        $existing = @(do {
+            $response = Invoke-CloudflareRequest "${uri}?search=$search&per_page=100&page=$page" $Headers -Operation '查询 KV'
+            $items = @($response.result | Where-Object { $null -ne $_ })
+            $items | Where-Object title -CEQ $name
+            $page++
+        } while ($items.Count -eq 100))
         if ($existing.Count -gt 1) { throw "Cloudflare 中有多个同名 KV（$name）。请在控制台核对后重试。" }
+        if ($existing.Count -eq 1) { $namespace = $existing[0] }
     }
-    $Deployment.KvAttempted = $true
-    $output = Run $nodeExe @($wranglerJs,'kv','namespace','create',$name)
-    $match = [regex]::Match($output, '(?m)["'']?id["'']?\s*[:=]\s*["'']([a-f0-9]{32})["'']')
-    if (-not $match.Success) { throw 'KV 已提交创建，但未取得 ID。继续部署时会重新查询同名 KV。' }
-    return $match.Groups[1].Value
+    if (-not $namespace) {
+        $Deployment.KvAttempted = $true
+        $body = @{title=$name} | ConvertTo-Json -Compress
+        $namespace = (Invoke-CloudflareRequest $uri $Headers 'Post' $body -Operation '创建 KV').result
+    }
+    if (-not $namespace -or -not $namespace.PSObject.Properties['id'] -or $namespace.id -notmatch '^[a-fA-F0-9]{32}$') {
+        throw 'Cloudflare 未返回有效的 KV ID。继续部署时会重新查询同名 KV。'
+    }
+    return $namespace.id
 }
 
-function Invoke-CloudflareRequest([string]$Uri, [hashtable]$Headers, [string]$Method = 'Get', [string]$Body = '') {
+function Initialize-PagesProject([string]$AccountUrl, [hashtable]$Headers) {
+    if ($Deployment.ProjectCreated) { return }
+
+    $projectsUrl = "$AccountUrl/pages/projects"
+    if ($Deployment.ProjectAttempted) {
+        $project = Invoke-CloudflareRequest "$projectsUrl/$ProjectName" $Headers -AllowNotFound -Operation '查询 Pages 项目'
+        if ($project) {
+            $Deployment.ProjectCreated = $true
+            return
+        }
+    }
+
+    $Deployment.ProjectAttempted = $true
+    $body = @{name=$ProjectName; production_branch='main'} | ConvertTo-Json -Compress
+    [void](Invoke-CloudflareRequest $projectsUrl $Headers 'Post' $body -Operation '创建 Pages 项目')
+    $Deployment.ProjectCreated = $true
+}
+
+function Invoke-CloudflareRequest([string]$Uri, [hashtable]$Headers, [string]$Method = 'Get', [string]$Body = '',
+                                 [switch]$AllowNotFound, [string]$Operation = '请求') {
     $request = @{Uri=$Uri; Headers=$Headers; Method=$Method; TimeoutSec=15}
     if ($Body) {
         $request.Body = $Body
@@ -109,11 +141,15 @@ function Invoke-CloudflareRequest([string]$Uri, [hashtable]$Headers, [string]$Me
     } catch {
         $responseProperty = $_.Exception.PSObject.Properties['Response']
         $status = if ($responseProperty -and $responseProperty.Value) {
-            'HTTP ' + [int]$responseProperty.Value.StatusCode
+            $statusCode = [int]$responseProperty.Value.StatusCode
+            if ($AllowNotFound -and $statusCode -eq 404) { return }
+            'HTTP ' + $statusCode
         } else { $_.Exception.Message }
-        throw "Cloudflare 请求失败（$status）。"
+        throw "Cloudflare $Operation 失败（$status）。"
     }
-    if (-not $response.success) { throw 'Cloudflare API 拒绝请求。请核对账号和权限。' }
+    if (-not $response -or -not $response.PSObject.Properties['success'] -or $response.success -ne $true) {
+        throw "Cloudflare $Operation 未成功。请核对账号和权限。"
+    }
     return $response
 }
 
@@ -127,6 +163,7 @@ function Attach-Domain([string]$Name, [string]$Project, [hashtable]$Headers, [st
     Write-Host "自定义域名 $Name 已提交 Pages 绑定。"
     & (Join-Path $root 'dnshe.ps1') -Domain $Name -Target "$Project.pages.dev" -ApiKey $DnsheKeyPlain -ApiSecret $DnsheSecretPlain
     if (-not $?) { throw 'DNSHE CNAME 创建失败。' }
+    $Deployment.DomainConfigured = $true
     try { [void](Invoke-CloudflareRequest "$uri/$Name" $Headers 'Patch') }
     catch { Write-Warning 'Cloudflare 域名验证重试请求未完成，稍后将继续检查状态。' }
     for ($i=0; $i -lt 6; $i++) {
@@ -141,7 +178,8 @@ function Attach-Domain([string]$Name, [string]$Project, [hashtable]$Headers, [st
 if (-not (Test-Path $nodeExe) -or -not (Test-Path $wranglerJs)) { throw '下载包缺少内置运行组件，请重新下载完整 ZIP。' }
 if (-not $ProjectName) { $ProjectName = 'zijianjichang-' + ([guid]::NewGuid().ToString('N')).Substring(0,8) }
 if ($ProjectName -notmatch '^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$') { throw '项目名格式无效。' }
-if (-not $Domain) { $Domain = Read-Host 'DNSHE 完整域名' }
+if ($PagesOnly) { $Domain = '' }
+if (-not $Domain -and -not $PagesOnly) { $Domain = Read-Host 'DNSHE 完整域名' }
 if ($Domain -and $Domain -notmatch '^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$') { throw '域名格式无效。' }
 
 $headers = $null
@@ -158,7 +196,15 @@ try {
     Set-DeploymentStep 1
     $headers = Resolve-CloudflareAccount
     $env:CLOUDFLARE_ACCOUNT_ID = $Deployment.AccountId
-    if (-not $DnsheKey -or -not $DnsheSecret) { throw '缺少 DNSHE API Key 或 Secret。' }
+    $accountUrl = "https://api.cloudflare.com/client/v4/accounts/$($Deployment.AccountId)"
+    if ($CheckDomainOnly) {
+        if (-not $Deployment.PagesReady -or -not $Deployment.DomainStarted -or -not $Domain) { throw '域名尚未提交绑定。' }
+        Set-DeploymentStep 4
+        $status = Invoke-CloudflareRequest "$accountUrl/pages/projects/$ProjectName/domains/$Domain" $headers
+        $Deployment.DomainActive = $status.result.status -eq 'active'
+        return
+    }
+    if ($Domain -and -not $CheckDomainOnly -and (-not $DnsheKey -or -not $DnsheSecret)) { throw '缺少 DNSHE API Key 或 Secret。' }
 
     if (-not $Deployment.PagesReady) {
         if (-not $AdminPassword) { $AdminPassword = Read-Host '管理员密码（仅传给 Cloudflare，不保存）' -AsSecureString }
@@ -171,7 +217,7 @@ try {
 
         if (-not $Deployment.KvId) {
             Set-DeploymentStep 2
-            $Deployment.KvId = Get-KvId
+            $Deployment.KvId = Get-KvId $accountUrl $headers
         }
         Set-DeploymentStep 3
         $dir = Join-Path $env:TEMP ("zijianjichang-" + [guid]::NewGuid().ToString('N'))
@@ -183,17 +229,7 @@ try {
             $cfg | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $dir 'wrangler.json') -Encoding utf8
             Push-Location $dir
             try {
-                if (-not $Deployment.ProjectCreated) {
-                    if ($Deployment.ProjectAttempted) {
-                        $existing = @(Read-WranglerJson @('pages','project','list','--json') | Where-Object { $_.'Project Name' -eq $ProjectName })
-                        $Deployment.ProjectCreated = $existing.Count -eq 1
-                    }
-                    if (-not $Deployment.ProjectCreated) {
-                        $Deployment.ProjectAttempted = $true
-                        [void](Run $nodeExe @($wranglerJs,'pages','project','create',$ProjectName,'--production-branch','main'))
-                        $Deployment.ProjectCreated = $true
-                    }
-                }
+                Initialize-PagesProject $accountUrl $headers
                 $plain = [System.Net.NetworkCredential]::new('', $AdminPassword).Password
                 try { Set-AdminSecret -Value $plain }
                 finally { $plain = $null }

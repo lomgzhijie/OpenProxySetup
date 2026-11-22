@@ -1,6 +1,7 @@
 ﻿# Windows PowerShell 5.1 desktop wizard. Keep this file UTF-8 with BOM.
 $ErrorActionPreference = 'Stop'
-$script:appVersion = '1.4.3'
+[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+$script:appVersion = '1.4.4'
 $deployScript = Join-Path $PSScriptRoot 'deploy.ps1'
 $bundledNode = Join-Path $PSScriptRoot 'runtime\node.exe'
 $bundledWrangler = Join-Path $PSScriptRoot 'runtime\node_modules\wrangler\bin\wrangler.js'
@@ -9,6 +10,35 @@ Add-Type -AssemblyName System.Drawing
 . (Join-Path $PSScriptRoot 'readme-view.ps1')
 . (Join-Path $PSScriptRoot 'site-store.ps1')
 . (Join-Path $PSScriptRoot 'site-browser.ps1')
+
+function Normalize-DeploymentDomain([string]$Value) {
+    $value = $Value.Trim()
+    if (-not $value) { return '' }
+    if ($value -notmatch '^[a-z][a-z0-9+.-]*://') { $value = 'https://' + $value }
+    $uri = $null
+    if ([Uri]::TryCreate($value,[UriKind]::Absolute,[ref]$uri) -and $uri.Scheme -in @('http','https') -and
+            -not $uri.UserInfo -and $uri.IsDefaultPort) { return $uri.DnsSafeHost.TrimEnd('.').ToLowerInvariant() }
+    return $Value.Trim()
+}
+
+function New-AdministratorPassword {
+    $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
+    $random = [Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        do {
+            $value = New-Object Text.StringBuilder
+            while ($value.Length -lt 20) {
+                $bytes = New-Object byte[] 1
+                $random.GetBytes($bytes)
+                if ($bytes[0] -lt (256 - (256 % $alphabet.Length))) {
+                    [void]$value.Append($alphabet[$bytes[0] % $alphabet.Length])
+                }
+            }
+            $passwordValue = $value.ToString()
+        } until ($passwordValue -cmatch '[A-Z]' -and $passwordValue -cmatch '[a-z]' -and $passwordValue -match '[0-9]')
+        return $passwordValue
+    } finally { $random.Dispose() }
+}
 
 Add-Type -ReferencedAssemblies System.Windows.Forms,System.Drawing -TypeDefinition @'
 using System;
@@ -819,6 +849,41 @@ Secret 通常只显示一次；创建后复制到第 4 步的输入框。
 '@ '打开 DNSHE API 管理入口 ↗' 'https://my.dnshe.com/' '3  DNSHE 授权' 125)
 
 $script:cloudflareVerified = $false
+$script:selectedCloudflareAccount = ''
+
+function Select-CloudflareAccount([string]$Token) {
+    $accounts = @()
+    for ($page = 1; ; $page++) {
+        $reply = Invoke-RestMethod -Uri "https://api.cloudflare.com/client/v4/accounts?per_page=50&page=$page" -Headers @{Authorization="Bearer $Token"} -TimeoutSec 15
+        if (-not $reply.success) { throw '无法读取 Cloudflare 账户列表。' }
+        $batch = @($reply.result)
+        $accounts += $batch
+        if ($batch.Count -lt 50) { break }
+    }
+    if ($script:deployment -and $script:deployment.AccountId -and -not $script:deployment.DomainActive) {
+        $accounts = @($accounts | Where-Object id -eq $script:deployment.AccountId)
+    }
+    if ($env:CLOUDFLARE_ACCOUNT_ID) { $accounts = @($accounts | Where-Object id -eq $env:CLOUDFLARE_ACCOUNT_ID) }
+    if (-not $accounts.Count) { throw '未找到可部署的账户。继续部署时请授权原来的账户。' }
+    if ($accounts.Count -eq 1) { return $accounts[0] }
+    $picker = New-Object Windows.Forms.Form
+    $picker.Text = '选择 Cloudflare 部署账户'; $picker.ClientSize = New-Object Drawing.Size(460,150)
+    $picker.BackColor = $theme.Surface; $picker.ForeColor = $theme.Ink
+    $picker.StartPosition = 'CenterParent'; $picker.FormBorderStyle = 'FixedDialog'
+    $picker.MaximizeBox = $false; $picker.MinimizeBox = $false
+    $options = New-Object Windows.Forms.ComboBox
+    $options.DropDownStyle = 'DropDownList'; $options.Bounds = New-Object Drawing.Rectangle(20,30,420,32)
+    $options.BackColor = $theme.Surface; $options.ForeColor = $theme.Ink
+    foreach ($entry in $accounts) { [void]$options.Items.Add(($entry.name + ' · ' + $entry.id.Substring(24))) }
+    $options.SelectedIndex = 0; $picker.Controls.Add($options)
+    $confirm = New-Object Windows.Forms.Button
+    $confirm.Text = '使用此账户'; $confirm.Bounds = New-Object Drawing.Rectangle(300,95,140,35)
+    Set-ButtonStyle $confirm $true
+    $confirm.DialogResult = 'OK'; $picker.Controls.Add($confirm); $picker.AcceptButton = $confirm
+    try { if ($picker.ShowDialog($form) -eq 'OK') { return $accounts[$options.SelectedIndex] } }
+    finally { $picker.Dispose() }
+    throw '已取消选择 Cloudflare 账户。'
+}
 $authCard = $guideCards[$authPage]
 $authButton = New-Object Windows.Forms.Button
 $authButton.Text = '开始 Cloudflare 授权'
@@ -841,6 +906,9 @@ $verifiedButton.add_Click({
         if ($auth.type -eq 'api_token' -and $env:CLOUDFLARE_ACCOUNT_ID -notmatch '^[a-fA-F0-9]{32}$') {
             throw '请在启动应用前设置 32 位的 CLOUDFLARE_ACCOUNT_ID。'
         }
+        $selected = Select-CloudflareAccount $auth.token
+        $script:selectedCloudflareAccount = $selected.id
+        $authStatus.Text = '已授权：' + $selected.name
         $script:cloudflareVerified = $true
         Show-WizardPage $domainGuidePage
     } catch { [Windows.Forms.MessageBox]::Show($_.Exception.Message) }
@@ -851,6 +919,26 @@ $authCard.Controls.Add($verifiedButton)
 
 $authStatus = Add-Text $authCard '' 522 75 240 48
 $authStatus.ForeColor = $theme.Blue
+Add-Action $authCard '切换 / 退出授权' 29 120 230 {
+    if ($script:deploymentHandle -or $script:oauthProcess) { $authStatus.Text = '请等待当前操作完成。'; return }
+    try {
+        $cli = Join-Path (Split-Path -Parent (Split-Path -Parent $bundledWrangler)) 'wrangler-dist\cli.js'
+        $start = New-Object Diagnostics.ProcessStartInfo
+        $start.FileName = $bundledNode; $start.Arguments = '--no-warnings "' + $cli + '" logout'
+        $start.UseShellExecute = $false; $start.CreateNoWindow = $true
+        $process = [Diagnostics.Process]::Start($start)
+        try { if (-not $process.WaitForExit(15000)) { $process.Kill(); throw '退出授权超时，请重试。' }; if ($process.ExitCode -ne 0) { throw '退出授权失败，请重试。' } }
+        finally { $process.Dispose() }
+        $script:cloudflareVerified = $false; $script:selectedCloudflareAccount = ''
+        $env:CLOUDFLARE_API_TOKEN = $null; $env:CLOUDFLARE_ACCOUNT_ID = $null
+        $authStatus.Text = '已退出。点「开始 Cloudflare 授权」登录。'
+    } catch { $authStatus.Text = $_.Exception.Message }
+}
+foreach ($control in $authCard.Controls) {
+    if ($control -is [Windows.Forms.TextBox] -and $control.Multiline) {
+        $control.Top = 170; $control.Height = 233
+    }
+}
 $authTimer = New-Object Windows.Forms.Timer
 $authTimer.Interval = 200
 $script:oauthProcess = $null
@@ -892,7 +980,7 @@ $authButton.add_Click({
         $loginCli = Join-Path (Split-Path -Parent (Split-Path -Parent $bundledWrangler)) 'wrangler-dist\cli.js'
         $start = New-Object Diagnostics.ProcessStartInfo
         $start.FileName = $bundledNode
-        $start.Arguments = '--no-warnings "' + $loginCli + '" login --no-browser'
+        $start.Arguments = '--no-warnings "' + $loginCli + '" login --no-browser --scopes account:read user:read pages:write workers_kv:write'
         $start.WorkingDirectory = $PSScriptRoot
         $start.UseShellExecute = $false
         $start.CreateNoWindow = $true
@@ -993,7 +1081,10 @@ foreach ($field in @($domain,$apiKey,$apiSecret,$password)) {
     $pasteButton.add_Click({
         try {
             if ([Windows.Forms.Clipboard]::ContainsText()) {
-                $targetField.SelectedText = [Windows.Forms.Clipboard]::GetText()
+                $pasted = [Windows.Forms.Clipboard]::GetText()
+                if ($targetField -ne $password) { $pasted = $pasted.Trim() }
+                if ($targetField -eq $domain) { $pasted = Normalize-DeploymentDomain $pasted }
+                $targetField.Text = $pasted
                 $targetField.Focus()
             } else { [Windows.Forms.MessageBox]::Show('剪贴板里没有可粘贴的文字，请先复制。') }
         } catch { [Windows.Forms.MessageBox]::Show('无法读取剪贴板，请重新复制后再试。') }
@@ -1016,13 +1107,20 @@ foreach ($field in @($apiSecret,$password)) {
     }.GetNewClosure())
     $deployCard.Controls.Add($toggleButton)
 }
-[void](Add-Text $deployCard '自己设定至少 12 位；部署后用它登录订阅网站的 /admin。' 190 279 570 30)
+$domain.add_Leave({ $domain.Text = Normalize-DeploymentDomain $domain.Text })
+Add-Action $deployCard '生成强密码' 190 278 135 { $password.Text = New-AdministratorPassword }
+Add-Action $deployCard '复制密码' 335 278 110 {
+    if (-not $password.Text) { $deployHint.Text = '请先填写或生成管理员密码。'; return }
+    try { [Windows.Forms.Clipboard]::SetText($password.Text); $deployHint.Text = '管理员密码已复制。' }
+    catch { $deployHint.Text = '暂时无法访问剪贴板，请重试。' }
+}
 $deployButton = New-Object Windows.Forms.Button
 $deployButton.Text = '开始自动部署'
 $deployButton.Location = New-Object Drawing.Point(190,324)
 $deployButton.Size = New-Object Drawing.Size(260,42)
 Set-ButtonStyle $deployButton $true
 $deployCard.Controls.Add($deployButton)
+Add-Action $deployCard '暂时只发布 Pages' 470 324 240 { Start-Deployment -PagesOnly }
 $deployHint = Add-Text $deployCard '' 30 380 750 55
 $deployHint.Anchor = 'Top,Left,Right'
 
@@ -1052,7 +1150,7 @@ $siteList.add_DrawItem({
     $fill = New-Object Drawing.SolidBrush($(if ($selected) { $theme.PaleBlue } else { $theme.Surface }))
     try { $event.Graphics.FillRectangle($fill,$event.Bounds) } finally { $fill.Dispose() }
     $bounds = $event.Bounds; $bounds.Inflate(-$form.DisplayPixels(12),0)
-    [Windows.Forms.TextRenderer]::DrawText($event.Graphics,$sender.Items[$event.Index].Domain,$sender.Font,$bounds,$theme.Ink,
+    [Windows.Forms.TextRenderer]::DrawText($event.Graphics,$sender.Items[$event.Index].Display,$sender.Font,$bounds,$theme.Ink,
         ([Windows.Forms.TextFormatFlags]::Left -bor [Windows.Forms.TextFormatFlags]::VerticalCenter))
 })
 $siteList.add_DoubleClick({ Open-SelectedSite })
@@ -1067,8 +1165,13 @@ Add-Action $manageCard '复制密码' 292 411 110 {
     try { [Windows.Forms.Clipboard]::SetText($siteList.SelectedItem.password); $manageStatus.Text = '后台密码已复制。' }
     catch { $manageStatus.Text = '暂时无法访问剪贴板，请重试。' }
 }
-Add-Action $manageCard '移除' 417 411 90 { Remove-SelectedSite }
-Add-Action $manageCard '清除全部本机记录' 522 411 225 {
+Add-Action $manageCard '复制网址' 410 411 100 {
+    if (-not $siteList.SelectedItem) { $manageStatus.Text = '请先选择一个站点。'; return }
+    try { [Windows.Forms.Clipboard]::SetText($siteList.SelectedItem.url); $manageStatus.Text = '后台网址已复制。' }
+    catch { $manageStatus.Text = '暂时无法访问剪贴板，请重试。' }
+}
+Add-Action $manageCard '移除' 515 411 70 { Remove-SelectedSite }
+Add-Action $manageCard '清除全部记录' 590 411 160 {
     if ([Windows.Forms.MessageBox]::Show($form,'清除全部保存的站点、密码和登录会话？','Open Proxy Setup','OKCancel','Question') -ne 'OK') { return }
     try {
         Remove-SavedSite
@@ -1101,11 +1204,17 @@ $managePassword.Bounds = New-Object Drawing.Rectangle(150,220,585,30)
 $managePassword.Anchor = 'Top,Left,Right'; $managePassword.UseSystemPasswordChar = $true
 $managePassword.BorderStyle = 'FixedSingle'; $managePassword.BackColor = $theme.Surface; $managePassword.ForeColor = $theme.Ink
 $siteEditCard.Controls.Add($managePassword)
+[void](Add-Text $siteEditCard '备注（可选）' 30 265 110 30)
+$manageNote = New-Object Windows.Forms.TextBox
+$manageNote.Bounds = New-Object Drawing.Rectangle(150,265,585,30)
+$manageNote.Anchor = 'Top,Left,Right'; $manageNote.MaxLength = 120
+$manageNote.BackColor = $theme.Surface; $manageNote.ForeColor = $theme.Ink; $manageNote.BorderStyle = 'FixedSingle'
+$siteEditCard.Controls.Add($manageNote)
 $siteEditStatus = Add-Text $siteEditCard '' 150 355 585 65
 $siteEditStatus.Anchor = 'Top,Left,Right'
-Add-Action $siteEditCard '验证并打开后台' 150 290 205 { Start-SiteConnection $manageUrl.Text $managePassword.Text $true $script:editingSite } $true
-Add-Action $siteEditCard '验证并保存' 375 290 170 { Start-SiteConnection $manageUrl.Text $managePassword.Text $false $script:editingSite }
-Add-Action $siteEditCard '返回列表' 565 290 170 { Show-WizardPage $managePage }
+Add-Action $siteEditCard '验证并打开后台' 150 310 205 { Start-SiteConnection $manageUrl.Text $managePassword.Text $true $script:editingSite -Note $manageNote.Text.Trim() } $true
+Add-Action $siteEditCard '验证并保存' 375 310 170 { Start-SiteConnection $manageUrl.Text $managePassword.Text $false $script:editingSite -Note $manageNote.Text.Trim() }
+Add-Action $siteEditCard '返回列表' 565 310 170 { Show-WizardPage $managePage }
 
 function Get-AdminUrl([string]$value) {
     $value = $value.Trim()
@@ -1124,17 +1233,19 @@ function Update-SiteList {
             try { $url = Get-AdminUrl $site.url } catch { continue }
             $uri = [Uri]$url
             $domainName = $uri.Host + $(if (-not $uri.IsDefaultPort) { ':' + $uri.Port } else { '' })
-            [void]$siteList.Items.Add([pscustomobject]@{url=$url; password=$site.password; Domain=$domainName})
+            $note = if ($site.PSObject.Properties['note']) { $site.note } else { '' }
+            $display = $domainName + $(if ($note) { '  ·  ' + $note } else { '' })
+            [void]$siteList.Items.Add([pscustomobject]@{url=$url; password=$site.password; Domain=$domainName; Note=$note; Display=$display})
         }
         $siteEmpty.Visible = $siteList.Items.Count -eq 0
         if ($siteList.Items.Count) { $siteList.SelectedIndex = 0 }
     } catch { $manageStatus.Text = '保存的站点无法解密，请清除本机记录后重新添加。' }
 }
 function Edit-ManagedSite($site) {
-    $manageUrl.Clear(); $managePassword.Clear(); $siteEditStatus.Text = ''
+    $manageUrl.Clear(); $managePassword.Clear(); $manageNote.Clear(); $siteEditStatus.Text = ''
     $script:editingSite = if ($site) { $site.url } else { '' }
     $siteEditTitle.Text = if ($site) { '编辑站点' } else { '添加站点' }
-    if ($site) { $manageUrl.Text = $site.Domain; $managePassword.Text = $site.password }
+    if ($site) { $manageUrl.Text = $site.Domain; $managePassword.Text = $site.password; $manageNote.Text = $site.Note }
     Show-WizardPage $siteEditPage
 }
 $manageUrl.add_TextChanged({
@@ -1182,7 +1293,9 @@ function Open-ManageBrowser {
             return
         }
         try {
-            Save-SavedSite $event.Url $script:pendingSitePassword -PreviousUrl $script:pendingPreviousSite
+            $options = @{ PreviousUrl=$script:pendingPreviousSite }
+            if ($null -ne $script:pendingSiteNote) { $options.Note = $script:pendingSiteNote }
+            Save-SavedSite $event.Url $script:pendingSitePassword @options
             Update-SiteList
             $manageStatus.Text = '密码验证成功，站点已保存。'
             if ($event.OpenRequested) { Show-WizardPage $browserPage } else { Show-WizardPage $managePage }
@@ -1190,13 +1303,14 @@ function Open-ManageBrowser {
         finally { $script:pendingSitePassword = $null }
     })
 }
-function Start-SiteConnection([string]$inputUrl,[string]$secret,[bool]$open,[string]$previousUrl) {
+function Start-SiteConnection([string]$inputUrl,[string]$secret,[bool]$open,[string]$previousUrl,[string]$Note) {
     if ($script:siteConnectionBusy) { return }
     try {
         $address = Get-AdminUrl $inputUrl
         if (-not $secret) { throw '请输入后台密码。' }
         $script:pendingSitePassword = $secret
         $script:pendingPreviousSite = $previousUrl
+        $script:pendingSiteNote = if ($PSBoundParameters.ContainsKey('Note')) { $Note } else { $null }
         Open-ManageBrowser
         Set-SiteConnectionBusy $true
         $manageStatus.Text = $siteEditStatus.Text = '正在验证密码…'
@@ -1261,6 +1375,20 @@ Set-ButtonStyle $editDeployment
 $editDeployment.add_Click({ Show-WizardPage $deployPage })
 $progressCard.Controls.Add($editDeployment)
 Add-Action $progressCard '进入后台管理' 406 420 175 { Show-WizardPage $managePage }
+Add-Action $progressCard '复制诊断信息' 594 420 175 {
+    $state = $script:deployment
+    if (-not $state) { $progress.Text = '当前尚无部署记录。'; return }
+    $kind = [regex]::Matches($progressDetail.Text,'HTTP [0-9]{3}|超时|DNS|HTTPS|403|权限|配额|连接中断|授权已过期') |
+        ForEach-Object { $_.Value } | Select-Object -Unique
+    $hasFailure = $state.FailedStep -gt 0 -and $state.FailedStep -lt $stageNames.Count
+    $stage = if ($hasFailure) { $stageNames[$state.FailedStep] } else { '无' }
+    $category = if (-not $hasFailure) { '未记录失败' } elseif ($kind) { $kind -join '、' } else { '服务请求失败，请对照应用提示' }
+    $report = "Open Proxy Setup Windows v$script:appVersion" + [Environment]::NewLine +
+        "失败阶段：$stage" + [Environment]::NewLine +
+        "Pages 已发布：$($state.PagesReady)；域名已验证：$($state.DomainActive)" + [Environment]::NewLine + "错误类别：$category"
+    try { [Windows.Forms.Clipboard]::SetText($report); $progress.Text = '诊断信息已复制。' }
+    catch { $progress.Text = '暂时无法访问剪贴板，请重试。' }
+}
 
 $readmePage = New-WizardPage
 Add-WizardPage $readmePage '' 0
@@ -1393,6 +1521,22 @@ $script:deployment = $null
 $script:deploymentHandle = $null
 $script:deploymentTimer = New-Object Windows.Forms.Timer
 $script:deploymentTimer.Interval = 300
+$script:domainCheckUntil = [DateTime]::MinValue
+$script:domainCheckAfter = [DateTime]::MinValue
+$domainPollTimer = New-Object Windows.Forms.Timer
+$domainPollTimer.Interval = 1000
+$domainPollTimer.add_Tick({
+    if ($script:currentPage -ne $progressPage -or -not $form.ContainsFocus -or $script:deploymentHandle) { return }
+    $now = [DateTime]::UtcNow
+    $state = $script:deployment
+    if ($state -and $state.PagesReady -and $state.DomainConfigured -and -not $state.DomainActive -and
+            $now -lt $script:domainCheckUntil -and $now -ge $script:domainCheckAfter) {
+        $script:domainCheckAfter = $now.AddSeconds(30)
+        Start-Deployment -CheckDomainOnly
+    }
+})
+$domainPollTimer.Start()
+$form.add_FormClosed({ $domainPollTimer.Stop(); $domainPollTimer.Dispose() })
 
 function Show-DeploymentProgress {
     $state = $script:deployment
@@ -1474,9 +1618,16 @@ function Complete-Deployment([string]$detail, [bool]$failed) {
             '请根据下方信息修正 Cloudflare 或 DNSHE 配置，再点「重试域名绑定」。'
         )
         $progressDetail.Text = $advice[$state.FailedStep] + [Environment]::NewLine + $detail
+    } elseif (-not $state.Domain) {
+        $progress.Text = 'Pages 已发布，可以打开后台。'
+        $progressDetail.Text = '之后可返回填写域名和 DNSHE 授权，继续绑定自定义域名。'
     } else {
         $progress.Text = 'Pages 已上线，正在等待自定义域名的 DNS 或证书验证。'
-        $progressDetail.Text = '现在可使用临时后台。等几分钟后可点击「重试域名绑定」查看是否已生效。'
+        $progressDetail.Text = '保持进度页打开，应用每 30 秒查询状态，持续约 5 分钟；也可手动重新验证。'
+        if ($script:domainCheckUntil -eq [DateTime]::MinValue) {
+            $script:domainCheckUntil = [DateTime]::UtcNow.AddMinutes(5)
+            $script:domainCheckAfter = [DateTime]::UtcNow.AddSeconds(30)
+        }
     }
     $progress.Text += ' 本次用时 {0:hh\:mm\:ss}。' -f $elapsed
     $deployHint.Text = $progress.Text
@@ -1485,7 +1636,7 @@ function Complete-Deployment([string]$detail, [bool]$failed) {
     $apiKey.ReadOnly = $apiSecret.ReadOnly = $false
     $password.ReadOnly = $state.PagesReady -and -not $state.DomainActive
     $deployButton.Enabled = $true
-    $deployButton.Text = if ($state.DomainActive) { '开始自动部署' } elseif ($state.PagesReady) { '重试域名绑定' } else { '继续部署' }
+    $deployButton.Text = if ($state.DomainActive) { '开始自动部署' } elseif ($state.PagesReady -and $state.DomainConfigured) { '重新验证' } elseif ($state.PagesReady) { '绑定域名' } else { '继续部署' }
     $retry.Text = $deployButton.Text
     $retry.Visible = -not $state.DomainActive
     $editDeployment.Text = if ($state.PagesReady) { '修改 DNSHE 授权' } else { '返回修改信息' }
@@ -1527,17 +1678,20 @@ $script:deploymentTimer.add_Tick({
     Complete-Deployment $detail $failed
 })
 
-function Start-Deployment {
+function Start-Deployment([switch]$PagesOnly, [switch]$CheckDomainOnly) {
     if ($script:deploymentHandle) { return }
     $state = $script:deployment
     $resume = $state -and -not $state.DomainActive
-    $d = if ($resume -and $state.DomainStarted) { $state.Domain } else { $domain.Text.Trim() }
-    if ($d -notmatch '^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$') {
+    if ($resume -and -not $state.Domain -and -not $domain.Text.Trim()) { $PagesOnly = $true }
+    if ($resume -and $state.PagesReady -and $state.DomainConfigured) { $CheckDomainOnly = $true }
+    $d = if ($PagesOnly) { '' } elseif ($resume -and $state.DomainStarted) { $state.Domain } else { Normalize-DeploymentDomain $domain.Text }
+    if ($PagesOnly -and $resume -and $state.DomainStarted) { $deployHint.Text = '本次部署已提交域名，请继续查询域名验证。'; return }
+    if (-not $PagesOnly -and $d -notmatch '^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$') {
         $deployHint.Text = '请填写 DNSHE“我的域名”中的完整域名。'
         Show-WizardPage $deployPage
         return
     }
-    if (-not $apiKey.Text.Trim() -or -not $apiSecret.Text) {
+    if (-not $PagesOnly -and -not $CheckDomainOnly -and (-not $apiKey.Text.Trim() -or -not $apiSecret.Text)) {
         $deployHint.Text = '请填写 DNSHE API Key 和 Secret。'
         Show-WizardPage $deployPage
         return
@@ -1549,13 +1703,14 @@ function Start-Deployment {
     }
 
     if (-not $resume) {
+        $script:domainCheckUntil = [DateTime]::MinValue
         $script:deploymentSiteUrl = $script:deploymentAdminPassword = ''
         $state = [hashtable]::Synchronized(@{
             ProjectName = 'zijianjichang-' + ([guid]::NewGuid().ToString('N')).Substring(0,8)
             Domain = $d; Step = 0; LastStep = 0; FailedStep = 0
             StepStarted = [DateTime]::UtcNow; Times = @(0.0,0.0,0.0,0.0,0.0)
-            AccountId = ''; KvId = ''; KvAttempted = $false; ProjectAttempted = $false
-            ProjectCreated = $false; PagesReady = $false; DomainStarted = $false; DomainActive = $false
+            AccountId = $script:selectedCloudflareAccount; KvId = ''; KvAttempted = $false; ProjectAttempted = $false
+            ProjectCreated = $false; PagesReady = $false; DomainStarted = $false; DomainConfigured = $false; DomainActive = $false
         })
         $script:deployment = $state
         foreach ($link in @($result,$customResult)) { $link.Tag = $null; $link.Visible = $false }
@@ -1576,8 +1731,8 @@ function Start-Deployment {
     Show-DeploymentProgress
     try {
         $script:runPassword = if (-not $state.PagesReady) { ConvertTo-SecureString $password.Text -AsPlainText -Force }
-        $script:runKey = ConvertTo-SecureString $apiKey.Text.Trim() -AsPlainText -Force
-        $script:runSecret = ConvertTo-SecureString $apiSecret.Text -AsPlainText -Force
+        $script:runKey = if ($d -and -not $CheckDomainOnly) { ConvertTo-SecureString $apiKey.Text.Trim() -AsPlainText -Force }
+        $script:runSecret = if ($d -and -not $CheckDomainOnly) { ConvertTo-SecureString $apiSecret.Text -AsPlainText -Force }
         $script:deploymentRunspace = [runspacefactory]::CreateRunspace()
         $script:deploymentRunspace.Open()
         $script:deploymentPowerShell = [powershell]::Create()
@@ -1586,6 +1741,8 @@ function Start-Deployment {
         [void]$script:deploymentPowerShell.AddParameters(@{
             ProjectName = $state.ProjectName; Domain = $state.Domain; Deployment = $state
             AdminPassword = $script:runPassword; DnsheKey = $script:runKey; DnsheSecret = $script:runSecret
+            PagesOnly = [bool]$PagesOnly
+            CheckDomainOnly = [bool]$CheckDomainOnly
         })
         $script:deploymentHandle = $script:deploymentPowerShell.BeginInvoke()
         $script:deploymentTimer.Start()

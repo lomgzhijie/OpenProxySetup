@@ -84,6 +84,9 @@ public final class MainActivity extends Activity {
     private String domain = "", key = "", secret = "", password = "", submittedPassword = "", boundDomain = "";
     private String manageUrl = "", managePassword = "", progressMessage = "";
     private boolean managementMode, siteVerifying;
+    private boolean manualAuthorization;
+    private long domainCheckAfter, domainCheckUntil;
+    private String manageNote = "";
     private int deploymentScreen = HOME;
     private int siteValidationRevision;
     private String editingSite = "", deployedPassword = "";
@@ -320,15 +323,19 @@ public final class MainActivity extends Activity {
         }
         button("登录或注册 Cloudflare ↗", false, () -> open(CLOUDFLARE));
         button("手机端图解：创建令牌与查找 Account ID", false, () -> render(CLOUDFLARE_GUIDE));
-        card();
-        title("使用 API Token 授权");
-        copy("创建自定义 Token 时，为目标账号授予 Cloudflare Pages 编辑和 Workers KV Storage 编辑权限。");
-        button("打开 API Token 页面 ↗", false, () -> open(TOKEN_PAGE));
-        field("Cloudflare Account ID", "粘贴 32 位账号 ID", account, false, v -> account = v.trim());
-        button("打开 Cloudflare 查看 Account ID ↗", false, () -> open(WORKERS_AND_PAGES));
-        field("Cloudflare API Token", "粘贴刚创建的 Token", token, true, v -> token = v.trim());
+        button(manualAuthorization ? "收起手动 API Token 授权 ▾" : "改用手动 API Token 授权 ▸", false,
+                () -> { manualAuthorization = !manualAuthorization; render(AUTH); });
+        if (manualAuthorization || !cloudflareOAuth.configured()) {
+            card();
+            title("使用 API Token 授权");
+            copy("创建自定义 Token 时，为目标账号授予 Cloudflare Pages 编辑和 Workers KV Storage 编辑权限。");
+            button("打开 API Token 页面 ↗", false, () -> open(TOKEN_PAGE));
+            field("Cloudflare Account ID", "粘贴 32 位账号 ID", account, false, v -> account = v.trim());
+            button("打开 Cloudflare 查看 Account ID ↗", false, () -> open(WORKERS_AND_PAGES));
+            field("Cloudflare API Token", "粘贴刚创建的 Token", token, true, v -> token = v.trim());
+            button("验证授权并继续", true, () -> verify(false));
+        }
         statusLine();
-        button("验证授权并继续", true, () -> verify(false));
         button("返回首页", false, () -> render(HOME));
     }
 
@@ -503,7 +510,9 @@ public final class MainActivity extends Activity {
         field("DNSHE API Key", "粘贴 API Key", key, true, v -> key = v.trim());
         field("DNSHE API Secret", "粘贴 API Secret", secret, true, v -> secret = v.trim());
         if (!pagesReady && submittedPassword.isEmpty()) {
-            field("后台管理员密码", "至少 12 个字符", password, true, v -> password = v);
+            EditText adminPassword = field("后台管理员密码", "至少 12 个字符", password, true, v -> password = v);
+            button("生成强密码", false, () -> adminPassword.setText(generatePassword()));
+            button("复制管理员密码", false, () -> copySecret(password));
         } else {
             copy(pagesReady ? "Pages 已发布，此处可继续配置自定义域名。" : "本次部署会继续使用已提交的管理员密码。");
         }
@@ -582,6 +591,15 @@ public final class MainActivity extends Activity {
                 oauthSession == null ? verifiedToken : oauthSession.accessToken(), boundDomain));
     }
 
+    private void autoCheckDomain() {
+        long now = SystemClock.elapsedRealtime();
+        if (screen != PROGRESS || !resumed || !pending || busy || domainCheckUntil == 0
+                || now > domainCheckUntil || now < domainCheckAfter) return;
+        domainCheckAfter = now + 30_000;
+        background("正在自动查询域名验证状态…", () -> readDomainStatus(deployment,
+                oauthSession == null ? verifiedToken : oauthSession.accessToken(), boundDomain));
+    }
+
     private Runnable readDomainStatus(Deployment current, String credential, String selectedDomain) {
         try {
             boolean active = current.domainActive(credential, selectedDomain);
@@ -621,6 +639,10 @@ public final class MainActivity extends Activity {
             waitStarted = 0;
         }
         failedPhase = 0;
+        if (waits && !pending) {
+            domainCheckAfter = SystemClock.elapsedRealtime() + 30_000;
+            domainCheckUntil = SystemClock.elapsedRealtime() + 5 * 60_000;
+        }
         pending = waits;
         domainActive = active;
         if (active) {
@@ -662,11 +684,13 @@ public final class MainActivity extends Activity {
         }
         if (!busy) {
             if (pending) {
+                copy("保持此页面打开，应用每 30 秒查询域名状态，持续约 5 分钟。等待 1 分钟后也可手动重新验证。");
                 recheckButton = action("重新验证", false, this::checkDomainStatus);
                 append(section, recheckButton, 9);
                 button("重新授权 Cloudflare", false, () -> render(AUTH));
                 button("在 Cloudflare 查看进度 ↗", false, () -> open(CLOUDFLARE + verifiedAccount + "/pages/view/" + deployment.pagesHost().split("\\.")[0]));
             } else if (failedPhase > 0) {
+                button("复制诊断信息", false, this::copyDiagnostics);
                 button(pagesReady ? "重试域名绑定" : "继续部署", true,
                         () -> startDeploy(bindOnRetry));
                 button("重新授权 Cloudflare", false, () -> render(AUTH));
@@ -709,6 +733,7 @@ public final class MainActivity extends Activity {
         handler.removeCallbacks(progressTick);
         if (screen != PROGRESS || !resumed || isDestroyed() || isFinishing()) return;
         updateProgress();
+        autoCheckDomain();
         if (runStarted != 0 || waitStarted != 0) handler.postDelayed(progressTick, 1_000);
     }
 
@@ -748,11 +773,14 @@ public final class MainActivity extends Activity {
                 name.setContentDescription("打开站点 " + SiteAuth.domain(site.url));
                 line.addView(name, new LinearLayout.LayoutParams(0, dp(54), 1));
                 Button menu = action("⋯", false, () -> dialog().setTitle(SiteAuth.domain(site.url))
-                    .setItems(new String[]{"编辑站点", "复制密码", "移除站点"}, (d, which) -> {
-                        if (which == 0) editSite(site); else if(which == 1) copySitePassword(site); else removeSite(site);
+                    .setItems(new String[]{"编辑站点", "复制密码", "复制后台网址", "移除站点"}, (d, which) -> {
+                        if (which == 0) editSite(site); else if(which == 1) copySitePassword(site);
+                        else if(which == 2) { getSystemService(ClipboardManager.class).setPrimaryClip(ClipData.newPlainText("后台网址",site.url)); message("后台网址已复制。"); }
+                        else removeSite(site);
                     }).show());
                 LinearLayout.LayoutParams space = new LinearLayout.LayoutParams(dp(46), dp(54));
                 space.leftMargin = dp(6); line.addView(menu, space); append(section, line, 0);
+                if (!site.note.isEmpty()) copy(site.note);
             }
         } catch (Exception e) { savedSiteError = "保存的站点无法解密，请清除本机记录后重新添加。"; }
         card(); statusLine();
@@ -775,6 +803,7 @@ public final class MainActivity extends Activity {
         editingSite = site == null ? "" : site.url;
         manageUrl = site == null ? "" : SiteAuth.domain(site.url);
         managePassword = site == null ? "" : site.password;
+        manageNote = site == null ? "" : site.note;
         render(SITE_EDIT);
     }
 
@@ -782,7 +811,7 @@ public final class MainActivity extends Activity {
         card(); heading(editingSite.isEmpty() ? "添加站点" : "编辑站点");
         copy("密码验证成功后才保存。网址和密码加密保存在本机。");
         managePasswordField = null;
-        field("站点域名", "例如 example.pages.dev", manageUrl, false, v -> {
+        EditText addressField = field("站点域名", "例如 example.pages.dev", manageUrl, false, v -> {
             if (!java.util.Objects.equals(adminUrl(manageUrl), adminUrl(v.trim())) && !managePassword.isEmpty()) {
                 managePassword = "";
                 if (managePasswordField != null) managePasswordField.setText("");
@@ -790,8 +819,17 @@ public final class MainActivity extends Activity {
             manageUrl = v.trim();
         });
         managePasswordField = field("后台密码", "输入部署时设置的密码", managePassword, true, v -> managePassword = v);
-        button("验证并打开后台", true, () -> verifySite(manageUrl, managePassword, editingSite, true));
-        button("验证并保存", false, () -> verifySite(manageUrl, managePassword, editingSite, false));
+        EditText noteField = field("备注（可选）", "例如 家用站点", manageNote, false, v -> manageNote = v.trim());
+        final EditText passwordField = managePasswordField;
+        final String previousAddress = editingSite;
+        button("验证并打开后台", true, () -> {
+            manageNote = noteField.getText().toString().trim();
+            verifySite(addressField.getText().toString(), passwordField.getText().toString(), previousAddress, true);
+        });
+        button("验证并保存", false, () -> {
+            manageNote = noteField.getText().toString().trim();
+            verifySite(addressField.getText().toString(), passwordField.getText().toString(), previousAddress, false);
+        });
         statusLine();
         button("返回站点列表", false, () -> render(MANAGE));
     }
@@ -835,6 +873,7 @@ public final class MainActivity extends Activity {
     private void verifySite(String input,String password,String previous,boolean open,Deployment sourceDeployment) {
         if(siteVerifying)return;
         final String address=adminUrl(input);
+        final String note = screen == SITE_EDIT ? manageNote : null;
         if(address==null||password.isEmpty()){message("请输入有效的站点域名和后台密码。");return;}
         final String ua;
         try { ua=android.webkit.WebSettings.getDefaultUserAgent(this); }
@@ -854,7 +893,7 @@ public final class MainActivity extends Activity {
                             boolean temporaryAddress = sourceDeployment != null && sourceDeployment == deployment
                                     && domainActive && address.equals(pagesAdminUrl(sourceDeployment));
                             if (!temporaryAddress) {
-                                try { SavedSite.save(this,address,password,previous); savedSiteError=""; }
+                                try { SavedSite.save(this,address,password,previous,note); savedSiteError=""; }
                                 catch (Exception e) {updateControls(shell,!busy||managementMode);message("验证成功，但保存失败，请检查设备存储后重试。");return;}
                             }
                             render(MANAGE);message(temporaryAddress ? "密码验证成功。" : "密码验证成功，站点已保存。");
@@ -916,7 +955,13 @@ public final class MainActivity extends Activity {
                 }).show());
         try (InputStream file = getAssets().open(DOC_FILES[docLanguage])) {
             boolean code = false;
+            boolean githubOnly = false;
             for (String line : new String(Deployment.readBytes(file), StandardCharsets.UTF_8).split("\\r?\\n")) {
+                if (!code && line.trim().equals("<!-- github-only-start -->")) { githubOnly = true; continue; }
+                if (githubOnly) {
+                    if (line.trim().equals("<!-- github-only-end -->")) githubOnly = false;
+                    continue;
+                }
                 if (line.startsWith("\u0060\u0060\u0060")) { code = !code; continue; }
                 if (line.trim().isEmpty() || line.startsWith("[简体中文](README.md)") || line.matches("\\|[ :|\\-]+\\|")) continue;
                 if (!code && line.matches("^#{1,4} .+")) {
@@ -968,7 +1013,7 @@ public final class MainActivity extends Activity {
             siteValidationRevision++; siteVerifying = false;
             render(MANAGE); message("已取消验证。"); return;
         }
-        if (busy && !managementMode) return;
+        if (busy && !managementMode) { message("部署正在进行，请等待完成。可从右上角切换到站点管理。"); return; }
         switch (screen) {
             case DOCS: render(docReturn); break;
             case CLOUDFLARE_GUIDE: render(AUTH); break;
@@ -1049,6 +1094,11 @@ public final class MainActivity extends Activity {
         input.setTextSize(15);
         input.setText(value);
         input.setHint(hint);
+        if (label.equals("完整域名")) {
+            input.setOnFocusChangeListener((view, focused) -> {
+                if (!focused) input.setText(normalizeDomain(input.getText().toString()));
+            });
+        }
         input.setMinHeight(dp(49));
         input.setPadding(dp(12), dp(8), dp(12), dp(8));
         input.setBackground(shape(background, border, 10));
@@ -1067,6 +1117,7 @@ public final class MainActivity extends Activity {
                 return;
             }
             input.setText(clip.getItemAt(0).getText().toString());
+            if (label.equals("完整域名")) input.setText(normalizeDomain(input.getText().toString()));
             input.setSelection(input.length());
         });
         paste.setContentDescription("粘贴 " + label);
@@ -1244,7 +1295,42 @@ public final class MainActivity extends Activity {
     }
 
     private static String normalizeDomain(String value) {
-        return value.trim().toLowerCase(Locale.ROOT).replaceFirst("\\.$", "");
+        String trimmed = value.trim();
+        Uri uri = Uri.parse(trimmed.contains("://") ? trimmed : "https://" + trimmed);
+        String host = uri.getHost();
+        if (host == null || !("https".equalsIgnoreCase(uri.getScheme()) || "http".equalsIgnoreCase(uri.getScheme()))
+                || uri.getUserInfo() != null || (uri.getPort() != -1 && uri.getPort() != 443)) return trimmed;
+        return host.toLowerCase(Locale.ROOT).replaceFirst("\\.$", "");
+    }
+
+    private static String generatePassword() {
+        String alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        String value;
+        do {
+            StringBuilder result = new StringBuilder();
+            for (int i = 0; i < 20; i++) result.append(alphabet.charAt(random.nextInt(alphabet.length())));
+            value = result.toString();
+        } while (!value.matches(".*[A-Z].*") || !value.matches(".*[a-z].*") || !value.matches(".*[0-9].*"));
+        return value;
+    }
+
+    private void copySecret(String value) {
+        if (value.isEmpty()) { message("请先填写或生成密码。"); return; }
+        copySitePassword(new SavedSite.Site("", value));
+    }
+
+    private void copyDiagnostics() {
+        StringBuilder report = new StringBuilder("Open Proxy Setup Android v").append(currentVersion());
+        report.append("\n失败阶段：").append(failedPhase > 0 ? PHASE_LABELS[failedPhase-1] : "未记录");
+        report.append("\nPages 已发布：").append(pagesReady).append("\n域名已验证：").append(domainActive);
+        Matcher kind = Pattern.compile("HTTP [0-9]{3}|超时|无法解析服务域名|HTTPS 连接错误|连接中断|网络中断|无法读取的响应|权限|配额").matcher(progressMessage);
+        report.append("\n错误类别：");
+        boolean found=false;
+        while(kind.find()){report.append(kind.group()).append(" ");found=true;}
+        if(!found)report.append("服务请求失败，请对照应用提示");
+        getSystemService(ClipboardManager.class).setPrimaryClip(ClipData.newPlainText("部署诊断",report.toString()));
+        message("诊断信息已复制，包含版本、阶段和错误类别。");
     }
 
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }

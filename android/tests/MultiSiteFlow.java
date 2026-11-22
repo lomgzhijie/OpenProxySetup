@@ -21,6 +21,7 @@ public final class MultiSiteFlow extends Instrumentation {
     private String mode;
     private static String lastUa="";
     private static int posts;
+    private static int domainChecks;
     @Override public void onCreate(Bundle args){
         super.onCreate(args);mode=args.getString("mode","prepare");
         URL.setURLStreamHandlerFactory(protocol->!protocol.equals("https")?null:new URLStreamHandler(){
@@ -31,6 +32,10 @@ public final class MultiSiteFlow extends Instrumentation {
                 boolean good(){return body.toString().equals("password=correct-password");}
                 public int getResponseCode(){
                     if(url.getHost().equals("api.github.com"))return 503;
+                    if(url.getHost().equals("api.cloudflare.com")) {
+                        require("GET".equals(getRequestMethod()),"Automatic validation only queries status");
+                        domainChecks++; return 200;
+                    }
                     if("POST".equals(getRequestMethod())){
                         if(body.toString().contains("slow-password"))SystemClock.sleep(1200);
                         require("".equals(getRequestProperty("Cookie")),"No old cookie on password POST");
@@ -41,7 +46,9 @@ public final class MultiSiteFlow extends Instrumentation {
                     require(lastUa.equals(getRequestProperty("User-Agent")),"Consistent user agent");return 200;
                 }
                 public String getContentType(){return "POST".equals(getRequestMethod())&&!good()?"text/html":"application/json";}
-                public InputStream getInputStream(){return new ByteArrayInputStream(("POST".equals(getRequestMethod())?
+                public InputStream getInputStream(){
+                    if(url.getHost().equals("api.cloudflare.com"))return new ByteArrayInputStream("{\"success\":true,\"result\":{\"status\":\"active\"}}".getBytes(StandardCharsets.UTF_8));
+                    return new ByteArrayInputStream(("POST".equals(getRequestMethod())?
                     good()?"{\"success\":true}":"<html>Wrong password</html>":"{\"UUID\":\"test-id\"}").getBytes(StandardCharsets.UTF_8));}
                 public Map<String,List<String>> getHeaderFields(){
                     Map<String,List<String>> headers=new HashMap<>();if(good())headers.put("Set-Cookie",Arrays.asList("auth=fresh-session; Path=/; Secure; HttpOnly"));return headers;
@@ -61,6 +68,12 @@ public final class MultiSiteFlow extends Instrumentation {
         if(view instanceof TextView&&((TextView)view).getText().toString().equals(value))return view;
         if(view instanceof ViewGroup)for(int i=0;i<((ViewGroup)view).getChildCount();i++){View v=find(((ViewGroup)view).getChildAt(i),value);if(v!=null)return v;}
         return null;
+    }
+    String textContents(View view){
+        StringBuilder value=new StringBuilder();
+        if(view instanceof TextView)value.append(((TextView)view).getText()).append('\n');
+        if(view instanceof ViewGroup)for(int i=0;i<((ViewGroup)view).getChildCount();i++)value.append(textContents(((ViewGroup)view).getChildAt(i)));
+        return value.toString();
     }
     EditText input(View view,boolean password){
         if(view instanceof EditText&&(((EditText)view).getHint().toString().contains("密码"))==password)return (EditText)view;
@@ -137,14 +150,117 @@ public final class MultiSiteFlow extends Instrumentation {
         require(browser!=null && sites().size()==2,"Opening the Pages fallback leaves the saved custom domain in place");
         runOnMainSync(browser::finish);
     }
+    void testConvenience() throws Exception {
+        Class<?> type=app.getClass();
+        runOnMainSync(()->{
+            try {
+                Field language=type.getDeclaredField("docLanguage");language.setAccessible(true);
+                for(int i=0;i<4;i++) {
+                    language.setInt(app,i);call(app,"render",new Class[]{int.class},7);
+                    String docs=textContents(app.getWindow().getDecorView());
+                    require(!docs.contains("<div")&&!docs.contains("<img")&&!docs.contains("github-only-")&&!docs.contains("&nbsp;"),"GitHub-only markup excluded from offline docs");
+                    require(docs.contains("Windows")&&docs.contains("Android"),"Platform comparison retained in docs");
+                }
+                call(app,"render",new Class[]{int.class},6);
+            }catch(Exception e){throw new RuntimeException(e);}
+        });
+        for(String input:new String[]{" example.com ","https://example.com/admin/","http://EXAMPLE.com/"}) {
+            require("example.com".equals(call(app,"normalizeDomain",new Class[]{String.class},input)),"Domain cleanup");
+        }
+        for(int i=0;i<100;i++) {
+            String password=(String)call(app,"generatePassword",new Class[]{});
+            require(password.length()==20&&password.matches(".*[A-Z].*")&&password.matches(".*[a-z].*")&&password.matches(".*[0-9].*"),"Generated password strength");
+        }
+        runOnMainSync(()->{
+            try {call(app,"render",new Class[]{int.class},1);}
+            catch(Exception error){throw new RuntimeException(error);}
+        });
+        require(find(app.getWindow().getDecorView(),"使用 API Token 授权")==null,"Manual token card initially collapsed");
+        tap("改用手动 API Token 授权 ▸");
+        require(find(app.getWindow().getDecorView(),"使用 API Token 授权")!=null,"Manual token card expands");
+        tap("4"); tap("生成强密码");
+        require(((String)field(app,"password")).length()==20,"Generator fills the deployment form");
+        Method save=store().getDeclaredMethod("save",Context.class,String.class,String.class,String.class,String.class);
+        save.setAccessible(true);
+        save.invoke(null,getTargetContext(),"https://notes.test/admin","correct-password","","家用站点");
+        Method defaultSave=store().getDeclaredMethod("save",Context.class,String.class,String.class);
+        defaultSave.setAccessible(true);
+        defaultSave.invoke(null,getTargetContext(),"https://notes.test/admin","updated-password");
+        require("家用站点".equals(field(site("notes.test"),"note")),"Reverification preserves encrypted note");
+        save.invoke(null,getTargetContext(),"https://renamed.test/admin","updated-password","https://notes.test/admin",null);
+        require("家用站点".equals(field(site("renamed.test"),"note")),"Domain replacement preserves note");
+        runOnMainSync(()->{
+            try { call(app,"render",new Class[]{int.class},6); }
+            catch(Exception error){throw new RuntimeException(error);}
+            View note=find(app.getWindow().getDecorView(),"家用站点");
+            require(note!=null,"Saved note is displayed");
+            ViewGroup card=(ViewGroup)note.getParent();
+            int domainRow=-1;
+            for(int i=0;i<card.getChildCount();i++)if(find(card.getChildAt(i),"renamed.test  →")!=null)domainRow=i;
+            require(domainRow>=0&&card.indexOfChild(note)>domainRow,"Domain appears above the note");
+        });
+        runOnMainSync(()->{
+            try {
+                Class<?> deploymentClass=Class.forName("org.openproxysetup.Deployment",true,getTargetContext().getClassLoader());
+                Constructor<?> constructor=deploymentClass.getDeclaredConstructor(String.class,byte[].class);
+                constructor.setAccessible(true);
+                Object deployment=constructor.newInstance("0123456789abcdef0123456789abcdef",new byte[0]);
+                for(Object[] entry:new Object[][]{{"deployment",deployment},{"verifiedToken","fixture-token"},{"boundDomain","auto.test"},
+                        {"deployedPassword","correct-password"},{"pagesReady",true},{"resumed",true}}) {
+                    Field f=type.getDeclaredField((String)entry[0]); f.setAccessible(true); f.set(app,entry[1]);
+                }
+                call(app,"finish",new Class[]{boolean.class,boolean.class,String.class},false,true,"等待验证");
+                Field after=type.getDeclaredField("domainCheckAfter"); after.setAccessible(true); after.setLong(app,0);
+                Field resumed=type.getDeclaredField("resumed"); resumed.setAccessible(true); resumed.setBoolean(app,false);
+                call(app,"autoCheckDomain",new Class[]{});
+                require(domainChecks==0,"Automatic checks pause in background");
+                resumed.setBoolean(app,true);
+                call(app,"render",new Class[]{int.class},6);
+                call(app,"autoCheckDomain",new Class[]{});
+                require(domainChecks==0,"Automatic checks pause away from the progress page");
+                call(app,"render",new Class[]{int.class},5);
+            } catch(Exception error){throw new RuntimeException(error);}
+        });
+        for(int i=0;i<100&&!(Boolean)field(app,"domainActive");i++)SystemClock.sleep(100);
+        require((Boolean)field(app,"domainActive")&&domainChecks==1,"Foreground automatic query recognizes a verified domain");
+        require(site("auto.test")!=null,"Automatic verification saves the custom domain");
+        runOnMainSync(()->{
+            try {
+                for(Object[] entry:new Object[][]{{"failedPhase",3},{"progressMessage","HTTP 503 token=private-fixture password=private-password"}}) {
+                    Field f=type.getDeclaredField((String)entry[0]); f.setAccessible(true);f.set(app,entry[1]);
+                }
+                call(app,"copyDiagnostics",new Class[]{});
+                String diagnostic=getTargetContext().getSystemService(android.content.ClipboardManager.class).getPrimaryClip().getItemAt(0).getText().toString();
+                require(diagnostic.contains("HTTP 503")&&!diagnostic.contains("private-fixture")&&!diagnostic.contains("private-password"),"Diagnostic copy only includes safe categories");
+            } catch(Exception error){throw new RuntimeException(error);}
+        });
+    }
     @Override public void onStart(){
         Bundle result=new Bundle();
         try{
-            if(mode.equals("prepare") || mode.equals("deployment"))seedLegacy();
+            if(mode.equals("prepare") || mode.equals("deployment") || mode.equals("convenience") || mode.equals("rename"))seedLegacy();
             app=startActivitySync(new Intent(Intent.ACTION_MAIN).setClassName("org.openproxysetup","org.openproxysetup.MainActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             waitForIdleSync();require((Integer)field(app,"screen")==6,"Management mode restored");
-            if(mode.equals("deployment")) {
+            if(mode.equals("convenience")) {
+                testConvenience();
+            } else if(mode.equals("deployment")) {
                 testDeploymentSite();
+            } else if(mode.equals("rename")){
+                Method save=store().getDeclaredMethod("save",Context.class,String.class,String.class,String.class,String.class);
+                save.setAccessible(true);
+                String fallback="https://rename-fixture.pages.dev/admin";
+                save.invoke(null,getTargetContext(),fallback,"correct-password","","保留备注");
+                Object original=site("rename-fixture.pages.dev");
+                runOnMainSync(()->{try{call(app,"editSite",new Class[]{original.getClass()},original);}catch(Exception e){throw new RuntimeException(e);}});
+                enter("https://CUSTOM.test/admin/","correct-password");tap("验证并保存");waitDone();
+                require(find(app.getWindow().getDecorView(),"custom.test  →")!=null,"Edited custom domain is immediately displayed");
+                require("保留备注".equals(field(site("custom.test"),"note")),"Edited domain preserves note");
+                for(Object s:sites())require(!fallback.equals(field(s,"url")),"Pages entry is replaced");
+                save.invoke(null,getTargetContext(),fallback,"correct-password","",null);
+                runOnMainSync(()->{try{call(app,"render",new Class[]{int.class},6);}catch(Exception e){throw new RuntimeException(e);}});
+                require(find(app.getWindow().getDecorView(),"custom.test  →")!=null,"Opening fallback keeps custom domain");
+                for(Object s:sites())require(!fallback.equals(field(s,"url")),"Fallback is not reintroduced");
+                picture("android-custom-domain-fixed.png");
             } else if(mode.equals("prepare")){
                 require(sites().size()==1,"Legacy single site migrated");
                 CookieManager.getInstance().setCookie("https://alpha.test/","auth=old-valid; Path=/; Max-Age=86400; Secure");CookieManager.getInstance().flush();

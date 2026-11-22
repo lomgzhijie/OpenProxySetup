@@ -29,8 +29,10 @@ final class SavedSite {
         return generator.generateKey();
     }
     static final class Site {
-        final String url,password;
-        Site(String url,String password){this.url=url;this.password=password;}
+        final String url,password,note,fallbackUrl;
+        Site(String url,String password){this(url,password,"");}
+        Site(String url,String password,String note){this(url,password,note,"");}
+        Site(String url,String password,String note,String fallbackUrl){this.url=url;this.password=password;this.note=note;this.fallbackUrl=fallbackUrl;}
     }
     static List<Site> all(Context context)throws Exception {
         JSONObject data=read(context);List<Site> sites=new ArrayList<>();
@@ -39,21 +41,42 @@ final class SavedSite {
         if(rows==null)rows=new JSONArray().put(data); // v1 single-site migration, encrypted format unchanged.
         for(int i=0;i<rows.length();i++){
             JSONObject row=rows.getJSONObject(i);String url=SiteAuth.adminUrl(row.optString("url"));
-            if(url!=null&&sites.stream().noneMatch(s->s.url.equals(url)))sites.add(new Site(url,row.optString("password")));
+            if(url!=null&&sites.stream().noneMatch(s->s.url.equals(url)))sites.add(new Site(url,row.optString("password"),row.optString("note"),row.optString("fallbackUrl")));
         }
         return sites;
     }
     static void save(Context context,String url,String password)throws Exception {save(context,url,password,"");}
     static void save(Context context,String url,String password,String previousUrl)throws Exception {
-        List<Site> sites=all(context);sites.removeIf(s->s.url.equals(url)||s.url.equals(previousUrl));
-        sites.add(0,new Site(url,password));write(context,sites);
+        save(context,url,password,previousUrl,null);
+    }
+    static void save(Context context,String url,String password,String previousUrl,String note)throws Exception {
+        List<Site> sites=all(context);
+        String normalized=SiteAuth.adminUrl(url);
+        if(normalized==null)throw new IllegalArgumentException("Invalid site address");
+        String previous=SiteAuth.adminUrl(previousUrl);
+        String fallback="";
+        // A verified custom address remains preferred when the Pages fallback is opened again.
+        for(Site site:sites)if(normalized.equals(site.fallbackUrl)) {normalized=site.url;fallback=site.fallbackUrl;break;}
+        final String target=normalized;
+        for(Site site:sites)if(site.url.equals(target)||site.url.equals(previous)) {
+            if(fallback.isEmpty())fallback=site.fallbackUrl;
+            if(note==null)note=site.note;
+        }
+        if(previous!=null&&!previous.equals(target)&&SiteAuth.domain(previous).endsWith(".pages.dev")
+                &&!SiteAuth.domain(target).endsWith(".pages.dev"))fallback=previous;
+        if(note==null) {
+            note="";
+        }
+        final String alias=fallback;
+        sites.removeIf(s->s.url.equals(target)||s.url.equals(previous)||s.url.equals(alias));
+        sites.add(0,new Site(target,password,note,fallback));write(context,sites);
     }
     static void remove(Context context,String url)throws Exception {
         List<Site> sites=all(context);sites.removeIf(s->s.url.equals(url));write(context,sites);
     }
     private static void write(Context context,List<Site> sites)throws Exception {
         JSONArray rows=new JSONArray();
-        for(Site site:sites)rows.put(new JSONObject().put("url",site.url).put("password",site.password));
+        for(Site site:sites)rows.put(new JSONObject().put("url",site.url).put("password",site.password).put("note",site.note).put("fallbackUrl",site.fallbackUrl));
         Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding"); cipher.init(Cipher.ENCRYPT_MODE, key());
         byte[] plain = new JSONObject().put("version",2).put("sites",rows).toString().getBytes(StandardCharsets.UTF_8);
         byte[] encrypted;

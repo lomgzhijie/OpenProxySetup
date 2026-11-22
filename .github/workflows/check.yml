@@ -25,6 +25,18 @@ jobs:
       - name: Check encrypted site storage
         shell: powershell
         run: ./tests/site-store.tests.ps1
+      - name: Check Cloudflare deployment recovery
+        shell: powershell
+        run: ./tests/deploy-resume.tests.ps1
+      - name: Check optional domain deployment
+        shell: powershell
+        run: ./tests/deploy-options.tests.ps1
+      - name: Check wizard inputs
+        shell: powershell
+        run: ./tests/wizard-input.tests.ps1
+      - name: Check embedded README rendering
+        shell: powershell
+        run: ./tests/readme-view.tests.ps1
       - name: Check embedded dashboard theme scope
         shell: powershell
         run: node ./tests/admin-theme.test.cjs

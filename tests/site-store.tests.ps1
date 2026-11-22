@@ -15,6 +15,9 @@ try {
     if ([Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($path)).Contains($testPassword)) { throw 'Plaintext on disk' }
     Save-SavedSite 'https://updated.test/admin' 'second-test-password' $path
     if ((Read-SavedSite $path).url -ne 'https://updated.test/admin') { throw 'Atomic overwrite failed' }
+    Save-SavedSite 'https://example.test/admin' 'edited-password' $path -Note '家用站点'
+    Save-SavedSite 'https://example.test/admin' 'edited-password' $path
+    if ((Read-SavedSite $path).note -ne '家用站点') { throw 'Password verification discarded the note' }
     if (@(Get-SavedSites $path).Count -ne 2) { throw 'Multiple sites not preserved' }
     Save-SavedSite 'https://example.test/admin' 'edited-password' $path
     if (@(Get-SavedSites $path).Count -ne 2) { throw 'Duplicate site created' }
