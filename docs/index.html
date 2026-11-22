@@ -101,7 +101,7 @@
 <p>两端都需要能访问 Cloudflare 和 DNSHE 的网络。部署后的站点可在兼容客户端使用，部署时使用的平台可按操作习惯选择。</p>
 <h2 id="android-安装版">Android 安装版</h2>
 <h3>下载和安装</h3>
-<p>支持 <strong>Android 8.0 及以上</strong>。下载 <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-android-v0.3.13.apk">Android v0.3.13 安装包</a> 后，在手机上打开 APK 安装。已安装旧版可直接覆盖安装。</p>
+<p>支持 <strong>Android 8.0 及以上</strong>。下载 <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.5/OpenProxySetup-android-v0.3.14.apk">Android v0.3.14 安装包</a> 后，在手机上打开 APK 安装。已安装旧版可直接覆盖安装。</p>
 <h3>首次部署</h3>
 <ol>
 <li><strong>授权 Cloudflare。</strong> 点「在浏览器授权 Cloudflare」，用自己的 Cloudflare 账号登录并同意授权。返回应用后选择要部署的账户（如果出现账户列表）。</li>
@@ -117,9 +117,9 @@
 <p>网址和密码加密保存在本机，Windows 使用当前用户的 DPAPI，Android 使用 Android Keystore 与 AES-GCM。可以单独移除一个站点，或清除全部本机站点与登录会话。移除一个站点不会删除其他站点。Cloudflare 与 DNSHE 的 API 凭据不包含在此保存功能中。内置后台保留原有设置、节点和订阅操作，配色跟随日间与暗夜模式。</p>
 <p>Windows 内置后台使用 Microsoft Edge WebView2 Runtime。Windows 11 通常已包含此组件；缺失时请从 <a href="https://developer.microsoft.com/microsoft-edge/webview2/">Microsoft 官方页面</a> 安装后重新打开应用。</p>
 <h2 id="windows-版下载与使用">Windows 版下载与使用</h2>
-<p>首页提示使用前准备可访问 Cloudflare 的 VPN 环境，并提供法律法规提示。你也可直接进入「后台管理」。部署成功后会自动加入站点列表；已有站点可手动添加并验证。可在右上角切换到「管理」，从站点列表打开后台，或添加并验证其他站点。</p>
+<p>点击首页「开始部署」时会弹出网络提醒，请先开启可访问 Cloudflare 和 DNSHE 的 VPN／代理环境，并遵守所在地适用的法律法规。你也可直接进入「后台管理」。部署成功后会自动加入站点列表；已有站点可手动添加并验证。可在右上角切换到「管理」，从站点列表打开后台，或添加并验证其他站点。</p>
 <ol>
-<li>下载 <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-windows-x64-setup.exe">Windows x64 安装程序</a>，双击运行并选择安装位置。安装程序会创建「自建机场」文件夹并打开部署向导。之后可从该目录双击 OpenProxySetup.exe。</li>
+<li>下载 <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.5/OpenProxySetup-windows-x64-setup.exe">Windows x64 安装程序</a>，双击运行并选择安装位置。安装程序会创建「自建机场」文件夹并打开部署向导。之后可从该目录双击 OpenProxySetup.exe。</li>
 <li>先在应用第 1 步点击「开始 Cloudflare 授权」，在浏览器注册或登录 <a href="https://dash.cloudflare.com/sign-up">Cloudflare</a> 并完成授权，再回到向导点击「我已完成授权，继续」。授权验证后，在第 2 步从 <a href="https://my.dnshe.com/">DNSHE</a> 获取域名，在第 3 步通过「域名管理 → API 管理」创建 API Key 和 API Secret。Cloudflare 账号密码只在 Cloudflare 网站输入。</li>
 <li>在应用中填写 DNSHE 域名、API Key / Secret，并设置至少 12 位的后台管理员密码，然后点击部署。应用负责创建 KV、Pages、密钥并部署，然后向 Pages 提交自定义域名绑定，通过 DNSHE API 为该域名添加指向 <code>pages.dev</code> 的 CNAME。已有的冲突 DNS 记录不会被覆盖。</li>
 <li>部署成功后点击应用显示的后台网址，输入刚才设置的密码。在后台复制需要的节点或订阅链接，导入兼容客户端。实际可用格式由部署时的上游版本决定。自定义域名生效前，先使用应用显示的 <code>pages.dev</code> 地址。</li>
@@ -182,7 +182,7 @@ try {
 </div>
 <h2 id="zip-免安装版">ZIP 免安装版</h2>
 <p>完整解压 <code>OpenProxySetup-windows-x64-portable.zip</code> 后，双击 <code>OpenProxySetup.exe</code>。EXE 与 runtime、vendor 及脚本应放在同一个目录。运行依赖 Windows 自带的 .NET Framework 和 Windows PowerShell 5.1。启动失败时，可运行 <code>启动应用.cmd</code> 查看错误。</p>
-<p>也可下载 <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-windows-x64-cmd-v1.4.4.zip">v1.4.4 CMD 版</a>，完整解压后双击 <code>OpenProxySetup.cmd</code>。</p>
+<p>也可下载 <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.5/OpenProxySetup-windows-x64-cmd-v1.4.5.zip">v1.4.5 CMD 版</a>，完整解压后双击 <code>OpenProxySetup.cmd</code>。</p>
 <h2 id="项目维护者打包">项目维护者打包</h2>
 <p>在 PowerShell 里运行 <code>npm ci --prefix runtime</code> 安装固定版本的 Wrangler，并将 Windows x64 版 <code>node.exe</code> 及其 <code>NODE-LICENSE</code> 放入 <code>runtime</code>，使用 Windows PowerShell 5.1 运行 <code>./打包发布.ps1</code>，自动编译 EXE 并生成 <code>OpenProxySetup-windows-x64-portable.zip</code> 和 CMD ZIP。单独编译可运行 <code>./构建应用.ps1</code>，运行 ./构建安装程序.ps1 可将 ZIP 打包成安装 EXE。启动入口源码位于 <code>launcher/Launcher.cs</code>。下载者无需执行这些维护命令。源码可直接运行 <code>./app.ps1</code>。</p>
 <h2 id="工作原理与边界">工作原理与边界</h2>

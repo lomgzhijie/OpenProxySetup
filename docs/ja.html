@@ -101,7 +101,7 @@
 <p>両プラットフォームで Cloudflare と DNSHE に接続できるネットワークが必要です。デプロイしたサイトは対応クライアントで利用できます。操作しやすいプラットフォームを選んでください。</p>
 <h2 id="android-版-apk">Android 版 APK</h2>
 <h3>ダウンロードとインストール</h3>
-<p><strong>Android 8.0 以降</strong>に対応しています。<a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-android-v0.3.13.apk">Android v0.3.13 の APK</a> をダウンロードし、スマートフォンで開いてインストールまたは更新します。</p>
+<p><strong>Android 8.0 以降</strong>に対応しています。<a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.5/OpenProxySetup-android-v0.3.14.apk">Android v0.3.14 の APK</a> をダウンロードし、スマートフォンで開いてインストールまたは更新します。</p>
 <h3>初回デプロイ</h3>
 <ol>
 <li><strong>Cloudflare を認証します。</strong> 「在浏览器授权 Cloudflare」をタップし、自分の Cloudflare アカウントでログインして許可します。アプリに戻り、選択画面が表示された場合はデプロイ先のアカウントを選びます。</li>
@@ -117,9 +117,9 @@
 <p>URL とパスワードは端末内に暗号化して保存されます。Windows は現在のユーザーの DPAPI、Android は Android Keystore と AES-GCM を使用します。サイトを個別に削除するか、すべての端末内サイト情報とログイン状態を消去できます。個別の削除では他のサイトは変更されません。Cloudflare と DNSHE の API 認証情報は保存対象に含まれません。内蔵管理画面は設定、ノード、サブスクリプション機能を保持し、アプリのライト・ダーク配色に連動します。</p>
 <p>Windows の内蔵管理画面には Microsoft Edge WebView2 Runtime が必要です。Windows 11 には通常含まれています。未導入の場合は <a href="https://developer.microsoft.com/microsoft-edge/webview2/">Microsoft 公式ページ</a>からインストールし、アプリを再起動してください。</p>
 <h2 id="windows-版のダウンロードと使い方">Windows 版のダウンロードと使い方</h2>
-<p>ホーム画面には法令に関する注意事項があり、「后台管理」（管理画面）に直接進むこともできます。デプロイ後はサイトが管理一覧に自動追加されます。右上の「管理」で保存済みサイトを開くか、別のサイトを追加・検証できます。</p>
+<p>ホーム画面でデプロイ開始を選ぶと、Cloudflare と DNSHE の両方にアクセスできる VPN またはプロキシを有効にし、適用される現地の法令を守るよう案内するダイアログが表示されます。「后台管理」（管理画面）には直接進めます。デプロイ後はサイトが管理一覧に自動追加されます。右上の「管理」で保存済みサイトを開くか、別のサイトを追加・検証できます。</p>
 <ol>
-<li><a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-windows-x64-setup.exe">Windows x64 インストーラー</a>をダウンロードして実行し、インストール先を選択します。「自建机场」フォルダーが作られ、ウィザードが開きます。次回からはフォルダー内の <code>OpenProxySetup.exe</code> をダブルクリックします。</li>
+<li><a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.5/OpenProxySetup-windows-x64-setup.exe">Windows x64 インストーラー</a>をダウンロードして実行し、インストール先を選択します。「自建机场」フォルダーが作られ、ウィザードが開きます。次回からはフォルダー内の <code>OpenProxySetup.exe</code> をダブルクリックします。</li>
 <li>手順 1 で「开始 Cloudflare 授权」を選び、ブラウザーで <a href="https://dash.cloudflare.com/sign-up">Cloudflare</a> に登録またはログインして認証します。ウィザードに戻り「我已完成授权，继续」を選びます。認証が確認されたら、手順 2 で <a href="https://my.dnshe.com/">DNSHE</a> のドメインを取得し、手順 3 の「ドメイン管理 → API 管理」で API Key と API Secret を作成します。Cloudflare の認証情報は Cloudflare のサイトで入力します。</li>
 <li>DNSHE ドメイン、API Key、API Secret、12 文字以上の管理者パスワードを入力してデプロイを開始します。アプリが KV、Pages、シークレットを作成してデプロイし、Pages にカスタムドメインの関連付けを申請します。さらに DNSHE API で <code>pages.dev</code> を指す CNAME を追加します。競合する既存の DNS レコードは保持されます。</li>
 <li>デプロイ完了後、表示された管理画面を開き、設定したパスワードでログインします。ノードまたはサブスクリプションリンクをコピーし、対応クライアントにインポートします。利用できる形式はデプロイ時の上流バージョンに依存します。カスタムドメインが有効になるまでは、表示された <code>pages.dev</code> アドレスを使えます。</li>
@@ -168,7 +168,7 @@
 </div>
 <h2 id="zip-ポータブル版">ZIP ポータブル版</h2>
 <p><code>OpenProxySetup-windows-x64-portable.zip</code> をすべて展開し、<code>OpenProxySetup.exe</code> をダブルクリックします。EXE、<code>runtime</code>、<code>vendor</code>、各スクリプトは同じフォルダーに置いてください。Windows の .NET Framework と Windows PowerShell 5.1 を使用します。起動に失敗した場合は、<code>启动应用.cmd</code> を実行してエラーを確認できます。</p>
-<p><a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-windows-x64-cmd-v1.4.4.zip">v1.4.4 CMD 版</a>も利用できます。ZIP をすべて展開し、<code>OpenProxySetup.cmd</code> をダブルクリックしてください。</p>
+<p><a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.5/OpenProxySetup-windows-x64-cmd-v1.4.5.zip">v1.4.5 CMD 版</a>も利用できます。ZIP をすべて展開し、<code>OpenProxySetup.cmd</code> をダブルクリックしてください。</p>
 <h2 id="メンテナー向けのパッケージ作成">メンテナー向けのパッケージ作成</h2>
 <p>PowerShell で <code>npm ci --prefix runtime</code> を実行して指定バージョンの Wrangler をインストールし、Windows x64 版の <code>node.exe</code> と <code>NODE-LICENSE</code> を <code>runtime</code> に置きます。Windows PowerShell 5.1 で <code>./打包发布.ps1</code> を実行すると、EXE をコンパイルして ポータブル版と CMD 版の ZIP を作成します。ランチャーだけをコンパイルする場合は <code>./构建应用.ps1</code>、ZIP からインストーラー EXE を作成する場合は <code>./构建安装程序.ps1</code> を実行します。ランチャーのソースは <code>launcher/Launcher.cs</code> にあります。これらのコマンドはメンテナー向けです。ソースから起動する場合は <code>./app.ps1</code> を実行します。</p>
 <h2 id="動作の仕組みと範囲">動作の仕組みと範囲</h2>
