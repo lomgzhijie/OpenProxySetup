@@ -36,7 +36,8 @@
   <aside class="docs-sidebar">
     <nav aria-label="On this page">
       <p>On this page</p>
-      <ul><li><a href="#choose-a-platform">Choose a platform</a></li>
+      <ul><li><a href="#quick-start">Quick start</a></li>
+<li><a href="#choose-a-platform">Choose a platform</a></li>
 <li><a href="#android-apk">Android APK</a></li>
 <li><a href="#install-and-use-on-windows">Install and use on Windows</a></li>
 <li><a href="#client-compatibility">Client compatibility</a></li>
@@ -47,8 +48,8 @@
     </nav>
   </aside>
   <article class="docs-article">
-<h1>自建机场</h1>
-<p><a href="../?lang=en#downloads">Download Windows x64</a> · <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/tag/v1.4.3">Android APK</a> · <a href="https://github.com/lomgzhijie/OpenProxySetup/issues/new/choose">Report an issue</a> · <a href="https://github.com/lomgzhijie/OpenProxySetup/blob/main/CONTRIBUTING.md">Contribute</a></p>
+<h2 id="quick-start">Quick start</h2>
+<p>New in this release: generate strong passwords, normalize domain input, check domain status every 30 seconds on the foreground progress page for up to five minutes, add site notes, copy dashboard URLs, and copy redacted diagnostics. Windows supports Pages-only deployment and Cloudflare account selection or switching; Android collapses the manual token form by default. Editing and verifying a saved site replaces its temporary address with the custom domain, which remains preferred when opening the Pages fallback.</p>
 <p>OpenProxySetup provides deployment wizards for Windows and Android. Authorize your own Cloudflare account and set an administrator password. It uses the bundled <a href="https://github.com/cmliu/edgetunnel">edgetunnel</a> source to create Cloudflare KV and Pages resources and displays a clickable site address. Open the site’s <code>/admin</code> page and enter the password to view nodes and subscription links in the upstream dashboard.</p>
 <p>The project provides a deployment wizard. Each user deploys to their own Cloudflare account. Shared nodes, accounts, and hosting are outside the scope of the project.</p>
 <p>The app checks for updates at startup and shows a dialog when a newer version is available. Choose Download update, Visit website, or Later. You can also check manually from the Android home screen or the Windows footer. Open the downloaded installer to update. This feature starts with Android v0.3.5 and Windows v1.4.1.</p>
@@ -100,7 +101,7 @@
 <p>Both platforms need network access to Cloudflare and DNSHE. The deployed site can be used with compatible clients. Choose the deployment platform that suits your workflow.</p>
 <h2 id="android-apk">Android APK</h2>
 <h3>Download and install</h3>
-<p>Requires <strong>Android 8.0 or later</strong>. Download the <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-android-v0.3.11.apk">Android v0.3.11 APK</a> and open it on your phone to install or update the app.</p>
+<p>Requires <strong>Android 8.0 or later</strong>. Download the <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-android-v0.3.13.apk">Android v0.3.13 APK</a> and open it on your phone to install or update the app.</p>
 <h3>First deployment</h3>
 <ol>
 <li><strong>Authorize Cloudflare.</strong> Tap <strong>Authorize Cloudflare in the browser</strong>, sign in with your own account, and approve access. Back in the app, select the deployment account if prompted.</li>
@@ -118,7 +119,7 @@
 <h2 id="install-and-use-on-windows">Install and use on Windows</h2>
 <p>The home screen shows a legal notice and offers direct access to the admin dashboard. Successful deployments are added to the site list automatically. Existing sites can be added and verified manually. Switch to Manage at the top right to open a saved site or add and verify another site.</p>
 <ol>
-<li>Download the <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-windows-x64-setup.exe">Windows x64 installer</a>, double-click it, and select an installation location. Setup creates a <code>自建机场</code> folder and opens the wizard. To reopen the app, double-click <code>OpenProxySetup.exe</code> in that folder.</li>
+<li>Download the <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-windows-x64-setup.exe">Windows x64 installer</a>, double-click it, and select an installation location. Setup creates a <code>自建机场</code> folder and opens the wizard. To reopen the app, double-click <code>OpenProxySetup.exe</code> in that folder.</li>
 <li>In step 1, select “开始 Cloudflare 授权” (Start Cloudflare authorization), sign up for or sign in to <a href="https://dash.cloudflare.com/sign-up">Cloudflare</a> in your browser, and complete authorization. Return to the wizard and select “我已完成授权，继续” (I’ve authorized, continue). Once authorization is confirmed, obtain a domain from <a href="https://my.dnshe.com/">DNSHE</a> in step 2 and create an API Key and API Secret under Domain Management → API Management in step 3. Enter your Cloudflare credentials on the Cloudflare website.</li>
 <li>Enter the DNSHE domain, API Key, API Secret, and an administrator password of at least 12 characters. Start deployment. The app creates KV, Pages, and the secret, deploys the site, requests the custom domain binding in Pages, and uses the DNSHE API to add a CNAME pointing to <code>pages.dev</code>. Existing conflicting DNS records are preserved.</li>
 <li>When deployment succeeds, open the displayed admin address and sign in with the password you set. Copy a node or subscription link from the dashboard and import it into a compatible client. Available formats depend on the upstream version used for deployment. Use the displayed <code>pages.dev</code> address while the custom domain is taking effect.</li>
@@ -167,7 +168,7 @@
 </div>
 <h2 id="portable-zip">Portable ZIP</h2>
 <p>Extract the entire <code>OpenProxySetup-windows-x64-portable.zip</code> archive and double-click <code>OpenProxySetup.exe</code>. Keep the EXE, <code>runtime</code>, <code>vendor</code>, and scripts in the same directory. The app uses Windows’ .NET Framework and Windows PowerShell 5.1. If it fails to launch, run <code>启动应用.cmd</code> to see the error.</p>
-<p>You can also download the <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.3/OpenProxySetup-windows-x64-cmd-v1.4.3.zip">v1.4.3 CMD edition</a>. Extract the entire ZIP and double-click <code>OpenProxySetup.cmd</code>.</p>
+<p>You can also download the <a href="https://github.com/lomgzhijie/OpenProxySetup/releases/download/v1.4.4/OpenProxySetup-windows-x64-cmd-v1.4.4.zip">v1.4.4 CMD edition</a>. Extract the entire ZIP and double-click <code>OpenProxySetup.cmd</code>.</p>
 <h2 id="packaging-for-maintainers">Packaging for maintainers</h2>
 <p>Run <code>npm ci --prefix runtime</code> in PowerShell to install the pinned Wrangler version, then place the Windows x64 <code>node.exe</code> and its <code>NODE-LICENSE</code> in <code>runtime</code>. Run <code>./打包发布.ps1</code> in Windows PowerShell 5.1 to compile the EXE and build the portable and CMD ZIP archives. Run <code>./构建应用.ps1</code> to compile the launcher separately, or <code>./构建安装程序.ps1</code> to turn the ZIP into an installer EXE. Launcher source is in <code>launcher/Launcher.cs</code>. These commands are for maintainers. To launch from source, run <code>./app.ps1</code>.</p>
 <h2 id="how-it-works-and-scope">How it works and scope</h2>

@@ -29,6 +29,7 @@ def doc_path(lang: str) -> str:
 
 
 def render_readme(source: str, lang: str) -> tuple[str, str]:
+    source = re.sub(r"<!-- github-only-start -->.*?<!-- github-only-end -->", "", source, flags=re.DOTALL)
     # The shared page header replaces the README's language switcher.
     source = re.sub(r"^\[简体中文\]\(README\.md\).*\n", "", source, count=1, flags=re.MULTILINE)
     markdown = MarkdownIt("js-default")
