@@ -29,6 +29,10 @@ try {
         if ($script:clipboardLocked) { throw 'Test clipboard is locked' }
         $global:opsWizardTestClipboard = $Text
     }
+    foreach ($checkpoint in @('Add-Type -ReferencedAssemblies System.Windows.Forms,System.Drawing', '$form = New-Object OpenProxySetupWindow', '$form.ClientSize =', '$header =', '$script:cloudflareVerified = $false', '$managePage =', '$readmePage =', '$initialSection =')) {
+        $source = $source.Replace($checkpoint, ("Write-Host 'Wizard initialization: " + $checkpoint.Replace("'", "''") + "'`n" + $checkpoint))
+    }
+    Write-Host 'Loading wizard source for handler regression'
     . ([scriptblock]::Create($source))
     if (-not ([Net.ServicePointManager]::SecurityProtocol -band [Net.SecurityProtocolType]::Tls12)) {
         throw 'TLS 1.2 is not enabled'
