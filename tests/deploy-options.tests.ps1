@@ -5,6 +5,10 @@ $source = $source.Replace('$root = Split-Path -Parent $MyInvocation.MyCommand.Pa
     ("`$root = '" + $testRoot.Replace("'","''") + "'"))
 $source = $source.Replace(". (Join-Path `$root 'proxy.ps1')", '# Proxy setup is unnecessary for mocked service requests.')
 $mock = @'
+# Runtime commands below are mocked; use existing files as presence-check fixtures.
+# CI checks out source without the distributable Node/Wrangler binaries.
+$nodeExe = Join-Path $PSHOME 'powershell.exe'
+$wranglerJs = Join-Path $root 'tests\deploy-options.tests.ps1'
 function Resolve-CloudflareAccount {
     $Deployment.AccountId = '00000000000000000000000000000001'
     return @{Authorization='Bearer fixture-token'}
