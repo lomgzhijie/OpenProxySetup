@@ -10,6 +10,8 @@ $source = $source.Replace($storeLine, $storeLine + [Environment]::NewLine +
     "function Get-SiteStorePath { '" + $isolatedPath.Replace("'","''") + "' }")
 $source = $source.Replace('[void]$form.ShowDialog()', '')
 $source = $source.Replace('[Windows.Forms.Clipboard]::SetText(', '(Set-TestClipboardText ')
+$source = $source.Replace('[Windows.Forms.Clipboard]::GetText()', '[string]$global:opsWizardTestClipboard')
+$source = $source.Replace('[Windows.Forms.Clipboard]::ContainsText()', '(![string]::IsNullOrEmpty($global:opsWizardTestClipboard))')
 # Exercise the account selection controls without a modal desktop on hosted runners.
 $source = $source.Replace('$picker.ShowDialog($form)',
     '$( $options.SelectedIndex = 1; [Windows.Forms.DialogResult]::OK )')
@@ -19,7 +21,7 @@ try {
     $script:clipboardLocked = $false
     function Set-TestClipboardText([string]$Text) {
         if ($script:clipboardLocked) { throw 'Test clipboard is locked' }
-        [Windows.Forms.Clipboard]::SetText($Text)
+        $global:opsWizardTestClipboard = $Text
     }
     . ([scriptblock]::Create($source))
     if (-not ([Net.ServicePointManager]::SecurityProtocol -band [Net.SecurityProtocolType]::Tls12)) {
@@ -48,11 +50,11 @@ try {
     if ($password.Text.Length -ne 20 -or $password.Text -cnotmatch '[A-Z]' -or
             $password.Text -cnotmatch '[a-z]' -or $password.Text -notmatch '[0-9]') { throw 'Password generator failed' }
     $domain.Text = 'old.example'
-    [Windows.Forms.Clipboard]::SetText(" https://example.com/admin/`r`n")
+    Set-TestClipboardText " https://example.com/admin/`r`n"
     $paste = $deployCard.Controls | Where-Object { $_.Text -eq '粘贴' -and $_.Top -eq $domain.Top }
     $paste.PerformClick()
     if ($domain.Text -ne 'example.com') { throw 'Paste failed to replace and normalize the entire domain field' }
-    [Windows.Forms.Clipboard]::SetText(' password-with-spaces ')
+    Set-TestClipboardText ' password-with-spaces '
     $paste = $deployCard.Controls | Where-Object { $_.Text -eq '粘贴' -and $_.Top -eq $password.Top }
     $paste.PerformClick()
     if ($password.Text -cne ' password-with-spaces ') { throw 'Paste changed the password' }
@@ -67,14 +69,14 @@ try {
     $script:deployment = @{FailedStep=3;PagesReady=$false;DomainActive=$false}
     $progressDetail.Text = 'HTTP 503 token=private-fixture password=private-password'
     ($progressCard.Controls | Where-Object Text -eq '复制诊断信息').PerformClick()
-    $report = [Windows.Forms.Clipboard]::GetText()
+    $report = $global:opsWizardTestClipboard
     if ($report -notlike '*HTTP 503*' -or $report -like '*private-fixture*' -or $report -like '*private-password*') {
         throw 'Diagnostic copy included raw credentials or omitted the error category'
     }
     if ($progress.Text -ne '诊断信息已复制。') { throw 'Diagnostic copy success feedback missing' }
     $script:deployment.FailedStep = 0
     ($progressCard.Controls | Where-Object Text -eq '复制诊断信息').PerformClick()
-    $report = [Windows.Forms.Clipboard]::GetText()
+    $report = $global:opsWizardTestClipboard
     if ($report -notlike '*未记录失败*' -or $report -like '*服务请求失败*') { throw 'No-failure diagnostic was misleading' }
     $script:clipboardLocked = $true
     ($progressCard.Controls | Where-Object Text -eq '复制诊断信息').PerformClick()
@@ -95,7 +97,7 @@ try {
     'PASS Windows generator, domain normalization, clipboard replacement, account chooser, safe diagnostics and Pages-only entry point'
 } finally {
     if ($form) { $form.Close(); $form.Dispose() }
-    [Windows.Forms.Clipboard]::Clear()
+    Remove-Variable opsWizardTestClipboard -Scope Global -ErrorAction SilentlyContinue
     $resolved = [IO.Path]::GetFullPath($temporary)
     if ($resolved.StartsWith([IO.Path]::GetFullPath($env:TEMP) + '\',[StringComparison]::OrdinalIgnoreCase)) {
         Remove-Item -LiteralPath $resolved -Recurse -Force
