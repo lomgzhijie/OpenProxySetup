@@ -34,7 +34,9 @@ jobs:
       - name: Check wizard inputs
         timeout-minutes: 3
         shell: powershell
-        run: ./tests/wizard-input.tests.ps1
+        run: |
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -STA -File ./tests/wizard-input.tests.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Wizard input regression failed' }
       - name: Check embedded README rendering
         shell: powershell
         run: ./tests/readme-view.tests.ps1
